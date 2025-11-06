@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { 
   ArrowLeft, 
   Plus, 
@@ -16,6 +15,8 @@ import {
   Eye
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { ContentBlockCard } from "@/components/ContentBlockCard";
+import { MobilePreview } from "@/components/MobilePreview";
 
 interface ContentBlock {
   id: string;
@@ -45,6 +46,19 @@ const StoryBuilder = () => {
     };
     setBlocks([...blocks, newBlock]);
     setSelectedBlock(newBlock.id);
+  };
+
+  const updateBlock = (id: string, content: any) => {
+    setBlocks(blocks.map((block) => 
+      block.id === id ? { ...block, content } : block
+    ));
+  };
+
+  const deleteBlock = (id: string) => {
+    setBlocks(blocks.filter((block) => block.id !== id));
+    if (selectedBlock === id) {
+      setSelectedBlock(null);
+    }
   };
 
   const getDefaultContent = (type: ContentBlock["type"]) => {
@@ -101,10 +115,13 @@ const StoryBuilder = () => {
 
       {/* Main Builder */}
       <div className="container mx-auto px-4 py-8">
-        <div className="grid lg:grid-cols-[300px_1fr_300px] gap-6">
+        <div className="grid lg:grid-cols-[280px_1fr_320px] gap-6">
           {/* Content Blocks Palette */}
           <Card className="p-6 h-fit sticky top-24">
-            <h3 className="font-semibold mb-4">Add Content</h3>
+            <h3 className="font-semibold mb-4">Content Blocks</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Add blocks to build your story
+            </p>
             <div className="space-y-2">
               {blockTypes.map(({ type, icon: Icon, label, color }) => (
                 <Button
@@ -122,87 +139,51 @@ const StoryBuilder = () => {
 
           {/* Canvas */}
           <div className="space-y-4">
-            <Card className="p-8">
-              <h2 className="text-2xl font-bold mb-2">Story Canvas</h2>
-              <p className="text-muted-foreground mb-6">
-                Add content blocks to build your interactive sustainability story
+            <div className="mb-4">
+              <h2 className="text-2xl font-bold mb-1">Story Canvas</h2>
+              <p className="text-sm text-muted-foreground">
+                Click on blocks to expand and edit their properties
               </p>
+            </div>
 
-              {blocks.length === 0 ? (
-                <div className="border-2 border-dashed rounded-lg p-12 text-center">
-                  <Plus className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <p className="text-muted-foreground">
-                    Start by adding content blocks from the left panel
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {blocks.map((block) => (
-                    <Card
-                      key={block.id}
-                      className={`p-4 cursor-pointer transition-all ${
-                        selectedBlock === block.id ? "ring-2 ring-primary" : ""
-                      }`}
-                      onClick={() => setSelectedBlock(block.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        {block.type === "text" && <Type className="h-5 w-5 text-blue-600" />}
-                        {block.type === "video" && <Video className="h-5 w-5 text-purple-600" />}
-                        {block.type === "image" && <ImageIcon className="h-5 w-5 text-green-600" />}
-                        {block.type === "map" && <Map className="h-5 w-5 text-orange-600" />}
-                        {block.type === "button" && <MousePointerClick className="h-5 w-5 text-pink-600" />}
-                        <div className="flex-1">
-                          <p className="font-medium capitalize">{block.type} Block</p>
-                          <p className="text-sm text-muted-foreground">
-                            {block.type === "text" && block.content.title}
-                            {block.type === "button" && block.content.label}
-                            {block.type === "map" && block.content.label}
-                          </p>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </Card>
+            {blocks.length === 0 ? (
+              <Card className="p-12 text-center border-2 border-dashed">
+                <Plus className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground">
+                  Start by adding content blocks from the left panel
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-3">
+                {blocks.map((block) => (
+                  <ContentBlockCard
+                    key={block.id}
+                    block={block}
+                    isExpanded={selectedBlock === block.id}
+                    onToggle={() => 
+                      setSelectedBlock(selectedBlock === block.id ? null : block.id)
+                    }
+                    onDelete={() => deleteBlock(block.id)}
+                    onUpdate={(content) => updateBlock(block.id, content)}
+                  />
+                ))}
+              </div>
+            )}
+
+            {blocks.length > 0 && (
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => setSelectedBlock(null)}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add Another Block
+              </Button>
+            )}
           </div>
 
-          {/* Properties Panel */}
-          <Card className="p-6 h-fit sticky top-24">
-            <h3 className="font-semibold mb-4">Properties</h3>
-            {selectedBlock ? (
-              <div className="space-y-4">
-                {blocks.find((b) => b.id === selectedBlock)?.type === "text" && (
-                  <>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Title</label>
-                      <Input placeholder="Section title" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Content</label>
-                      <Textarea placeholder="Write your story..." rows={6} />
-                    </div>
-                  </>
-                )}
-                {blocks.find((b) => b.id === selectedBlock)?.type === "button" && (
-                  <>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Button Label</label>
-                      <Input placeholder="Learn More" />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Action</label>
-                      <Input placeholder="URL or next section" />
-                    </div>
-                  </>
-                )}
-              </div>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Select a content block to edit its properties
-              </p>
-            )}
-          </Card>
+          {/* Mobile Preview */}
+          <MobilePreview blocks={blocks} selectedBlock={selectedBlock} />
         </div>
       </div>
     </div>
