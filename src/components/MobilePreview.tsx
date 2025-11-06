@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Video, Type, Image as ImageIcon, Map, MousePointerClick } from "lucide-react";
+import { Video, Type, Image as ImageIcon, Map, MousePointerClick, ChevronLeft, ChevronRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface ContentBlock {
   id: string;
@@ -13,9 +15,28 @@ interface MobilePreviewProps {
 }
 
 export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  
+  const goToPrevious = () => {
+    setCurrentIndex((prev) => Math.max(0, prev - 1));
+  };
+  
+  const goToNext = () => {
+    setCurrentIndex((prev) => Math.min(blocks.length - 1, prev + 1));
+  };
+  
+  const currentBlock = blocks[currentIndex];
+  
   return (
     <div className="sticky top-24">
-      <h3 className="font-semibold mb-4">Mobile Preview</h3>
+      <h3 className="font-semibold mb-4 flex items-center justify-between">
+        <span>Mobile Preview</span>
+        {blocks.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {currentIndex + 1} / {blocks.length}
+          </span>
+        )}
+      </h3>
       
       {/* Phone Frame */}
       <div className="mx-auto w-[280px] bg-card border-8 border-foreground rounded-[40px] shadow-2xl overflow-hidden">
@@ -25,7 +46,7 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
         </div>
         
         {/* Phone Screen */}
-        <div className="bg-background h-[500px] overflow-y-auto">
+        <div className="bg-background h-[500px] relative">
           {blocks.length === 0 ? (
             <div className="flex items-center justify-center h-full p-6 text-center">
               <p className="text-sm text-muted-foreground">
@@ -33,55 +54,90 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
               </p>
             </div>
           ) : (
-            <div className="p-4 space-y-3">
-              {blocks.map((block) => (
-                <div
-                  key={block.id}
-                  className={`rounded-lg transition-all ${
-                    selectedBlock === block.id
-                      ? "ring-2 ring-primary bg-primary/5"
-                      : "bg-card"
-                  }`}
+            <>
+              {/* Progress Indicators */}
+              <div className="absolute top-2 left-2 right-2 flex gap-1 z-10">
+                {blocks.map((_, i) => (
+                  <div
+                    key={i}
+                    className={`h-0.5 flex-1 rounded-full transition-all ${
+                      i === currentIndex ? "bg-white" : "bg-white/30"
+                    }`}
+                  />
+                ))}
+              </div>
+              
+              {/* Current Block Display */}
+              <div className="h-full p-4 pt-8 flex items-center justify-center">
+                {currentBlock && (
+                  <div className={`w-full ${
+                    selectedBlock === currentBlock.id
+                      ? "ring-2 ring-primary bg-primary/5 rounded-lg"
+                      : ""
+                  }`}>
+                    {currentBlock.type === "text" && (
+                      <div className="p-4">
+                        <h3 className="font-semibold text-lg mb-3">
+                          {currentBlock.content.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground leading-relaxed">
+                          {currentBlock.content.body}
+                        </p>
+                      </div>
+                    )}
+                    
+                    {currentBlock.type === "video" && (
+                      <div className="aspect-video bg-muted/50 flex items-center justify-center rounded-lg">
+                        <Video className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    {currentBlock.type === "image" && (
+                      <div className="aspect-[4/3] bg-muted/50 flex items-center justify-center rounded-lg">
+                        <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    {currentBlock.type === "map" && (
+                      <div className="h-60 bg-muted/50 flex items-center justify-center rounded-lg">
+                        <Map className="h-12 w-12 text-muted-foreground" />
+                      </div>
+                    )}
+                    
+                    {currentBlock.type === "button" && (
+                      <div className="p-4">
+                        <button className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
+                          {currentBlock.content.label}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+              
+              {/* Navigation Arrows */}
+              {currentIndex > 0 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                  onClick={goToPrevious}
                 >
-                  {block.type === "text" && (
-                    <div className="p-4">
-                      <h3 className="font-semibold text-sm mb-2">
-                        {block.content.title}
-                      </h3>
-                      <p className="text-xs text-muted-foreground line-clamp-3">
-                        {block.content.body}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {block.type === "video" && (
-                    <div className="aspect-video bg-muted/50 flex items-center justify-center">
-                      <Video className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  
-                  {block.type === "image" && (
-                    <div className="aspect-[4/3] bg-muted/50 flex items-center justify-center">
-                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  
-                  {block.type === "map" && (
-                    <div className="h-40 bg-muted/50 flex items-center justify-center">
-                      <Map className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  )}
-                  
-                  {block.type === "button" && (
-                    <div className="p-4">
-                      <button className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-                        {block.content.label}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+              )}
+              
+              {currentIndex < blocks.length - 1 && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-background/80 hover:bg-background"
+                  onClick={goToNext}
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+            </>
           )}
         </div>
         
