@@ -9,22 +9,19 @@ import {
   Type, 
   Image as ImageIcon, 
   Map, 
-  MousePointerClick,
   Smartphone,
   Save,
   Eye,
   Loader2,
   ChevronRight,
   Home,
-  GitBranch,
-  Upload
+  GitBranch
 } from "lucide-react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ContentBlockCard } from "@/components/ContentBlockCard";
 import { MobilePreview } from "@/components/MobilePreview";
 import { useStory, useSaveStory, usePublishStory, ContentBlock, StoryBranch } from "@/hooks/useStories";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { nanoid } from "nanoid";
 
 const StoryBuilder = () => {
@@ -37,8 +34,6 @@ const StoryBuilder = () => {
   const [currentBranchId, setCurrentBranchId] = useState("root");
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [newBranchName, setNewBranchName] = useState("");
-  const [newBranchIcon, setNewBranchIcon] = useState("");
 
   const { data: story, isLoading } = useStory(storyId);
   const saveStory = useSaveStory();
@@ -62,7 +57,6 @@ const StoryBuilder = () => {
     { type: "video" as const, icon: Video, label: "Video", color: "text-purple-600" },
     { type: "image" as const, icon: ImageIcon, label: "Image", color: "text-green-600" },
     { type: "map" as const, icon: Map, label: "Map", color: "text-orange-600" },
-    { type: "button" as const, icon: MousePointerClick, label: "Button", color: "text-pink-600" },
   ];
 
   const addBlock = (type: ContentBlock["type"]) => {
@@ -102,22 +96,24 @@ const StoryBuilder = () => {
     ));
   };
 
-  const addBranch = () => {
-    if (!newBranchName.trim()) return;
-    
+  const createBranchForOption = (optionId: string, branchName: string, branchIcon?: string): string => {
     const newBranch: StoryBranch = {
       id: nanoid(),
-      name: newBranchName,
+      name: branchName,
       parentId: currentBranchId,
       blocks: [],
-      icon: newBranchIcon || undefined,
+      icon: branchIcon,
     };
     
-    setBranches([...branches, newBranch]);
-    setCurrentBranchId(newBranch.id);
-    setNewBranchName("");
-    setNewBranchIcon("");
+    setBranches(prev => [...prev, newBranch]);
     setHasUnsavedChanges(true);
+    
+    // Auto-navigate to new branch
+    setTimeout(() => {
+      setCurrentBranchId(newBranch.id);
+    }, 100);
+    
+    return newBranch.id;
   };
 
   const navigateToBranch = (branchId: string) => {
@@ -186,8 +182,8 @@ const StoryBuilder = () => {
         return { url: "", alt: "" };
       case "map":
         return { lat: 52.3676, lng: 4.9041, label: "Amsterdam Workshop" };
-      case "button":
-        return { label: "Learn More", targetBranchId: "", url: "" };
+      case "branch_choice":
+        return { media: { url: "" }, text: "", options: [] };
       default:
         return {};
     }
@@ -319,50 +315,13 @@ const StoryBuilder = () => {
               </div>
             </div>
 
-            <div className="border-t pt-6">
-              <div className="flex items-center gap-2 mb-4">
-                <GitBranch className="h-4 w-4" />
-                <h3 className="font-semibold">Branches</h3>
-              </div>
-              
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full justify-start mb-4">
-                    <Plus className="h-4 w-4 mr-2" />
-                    Create Branch
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create New Branch</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Branch Name</label>
-                      <Input
-                        value={newBranchName}
-                        onChange={(e) => setNewBranchName(e.target.value)}
-                        placeholder="e.g., Claim 1, Product Journey"
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium mb-2 block">Icon URL (optional)</label>
-                      <Input
-                        value={newBranchIcon}
-                        onChange={(e) => setNewBranchIcon(e.target.value)}
-                        placeholder="https://..."
-                      />
-                    </div>
-                    <Button onClick={addBranch} className="w-full">
-                      Create Branch
-                    </Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-
-              {childBranches.length > 0 && (
+            {childBranches.length > 0 && (
+              <div className="border-t pt-6">
+                <div className="flex items-center gap-2 mb-4">
+                  <GitBranch className="h-4 w-4" />
+                  <h3 className="font-semibold">Child Branches</h3>
+                </div>
                 <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground mb-2">Child branches:</p>
                   {childBranches.map((branch) => (
                     <Button
                       key={branch.id}
@@ -378,8 +337,8 @@ const StoryBuilder = () => {
                     </Button>
                   ))}
                 </div>
-              )}
-            </div>
+              </div>
+            )}
           </Card>
 
           {/* Canvas */}
@@ -412,6 +371,7 @@ const StoryBuilder = () => {
                     onUpdate={(content) => updateBlock(block.id, content)}
                     branches={branches}
                     currentBranchId={currentBranchId}
+                    onCreateBranch={createBranchForOption}
                   />
                 ))}
               </div>
@@ -421,10 +381,10 @@ const StoryBuilder = () => {
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => setSelectedBlock(null)}
+                onClick={() => addBlock("branch_choice")}
               >
-                <Plus className="h-4 w-4 mr-2" />
-                Add Another Block
+                <GitBranch className="h-4 w-4 mr-2" />
+                Create Branch Choice
               </Button>
             )}
           </div>

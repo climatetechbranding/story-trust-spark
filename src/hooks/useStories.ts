@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 
 export interface ContentBlock {
   id: string;
-  type: "video" | "text" | "image" | "map" | "button";
+  type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
 }
 
@@ -42,25 +42,47 @@ export const useStories = () => {
 
       if (error) throw error;
       return (data || []).map((story) => {
-        const content = story.content as any;
-        // Handle migration from old flat content to branches
-        if (Array.isArray(content)) {
-          return {
-            ...story,
-            branches: [{
-              id: "root",
-              name: "Main Story",
-              parentId: null,
-              blocks: content as ContentBlock[],
-            }],
-            rootBranchId: "root",
-          };
-        }
+      const content = story.content as any;
+      // Handle migration from old flat content to branches
+      if (Array.isArray(content)) {
+        // Migrate old button blocks to branch_choice
+        const migratedBlocks = content.map((block: any) => {
+          if (block.type === "button") {
+            return {
+              ...block,
+              type: "branch_choice" as const,
+              content: {
+                media: { url: "" },
+                text: "",
+                options: [{
+                  id: nanoid(),
+                  text: block.content.label || "Learn More",
+                  targetBranchId: block.content.targetBranchId || "",
+                  targetBranchName: "",
+                  media: { url: "" }
+                }]
+              }
+            };
+          }
+          return block;
+        });
+        
         return {
           ...story,
-          branches: content.branches || [],
-          rootBranchId: content.rootBranchId || "root",
+          branches: [{
+            id: "root",
+            name: "Main Story",
+            parentId: null,
+            blocks: migratedBlocks,
+          }],
+          rootBranchId: "root",
         };
+      }
+      return {
+        ...story,
+        branches: content.branches || [],
+        rootBranchId: content.rootBranchId || "root",
+      };
       }) as Story[];
     },
   });
@@ -85,13 +107,35 @@ export const useStory = (storyId: string | undefined) => {
       const content = data.content as any;
       // Handle migration from old flat content to branches
       if (Array.isArray(content)) {
+        // Migrate old button blocks to branch_choice
+        const migratedBlocks = content.map((block: any) => {
+          if (block.type === "button") {
+            return {
+              ...block,
+              type: "branch_choice" as const,
+              content: {
+                media: { url: "" },
+                text: "",
+                options: [{
+                  id: nanoid(),
+                  text: block.content.label || "Learn More",
+                  targetBranchId: block.content.targetBranchId || "",
+                  targetBranchName: "",
+                  media: { url: "" }
+                }]
+              }
+            };
+          }
+          return block;
+        });
+        
         return {
           ...data,
           branches: [{
             id: "root",
             name: "Main Story",
             parentId: null,
-            blocks: content as ContentBlock[],
+            blocks: migratedBlocks,
           }],
           rootBranchId: "root",
         } as Story;

@@ -4,20 +4,24 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { BranchSelector } from "@/components/BranchSelector";
 import { StoryBranch } from "@/hooks/useStories";
+import { nanoid } from "nanoid";
 import {
   Video,
   Type,
   Image as ImageIcon,
   Map,
-  MousePointerClick,
+  GitBranch,
   ChevronDown,
   ChevronUp,
   Trash2,
+  Plus,
+  GripVertical,
+  Upload,
 } from "lucide-react";
 
 interface ContentBlock {
   id: string;
-  type: "video" | "text" | "image" | "map" | "button";
+  type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
 }
 
@@ -29,6 +33,7 @@ interface ContentBlockCardProps {
   onUpdate: (content: any) => void;
   branches?: StoryBranch[];
   currentBranchId?: string;
+  onCreateBranch?: (optionId: string, branchName: string, branchIcon?: string) => string;
 }
 
 export const ContentBlockCard = ({
@@ -39,6 +44,7 @@ export const ContentBlockCard = ({
   onUpdate,
   branches = [],
   currentBranchId = "",
+  onCreateBranch,
 }: ContentBlockCardProps) => {
   const getIcon = () => {
     switch (block.type) {
@@ -50,8 +56,8 @@ export const ContentBlockCard = ({
         return <ImageIcon className="h-5 w-5 text-secondary" />;
       case "map":
         return <Map className="h-5 w-5 text-orange-600" />;
-      case "button":
-        return <MousePointerClick className="h-5 w-5 text-pink-600" />;
+      case "branch_choice":
+        return <GitBranch className="h-5 w-5 text-pink-600" />;
     }
   };
 
@@ -65,9 +71,48 @@ export const ContentBlockCard = ({
         return block.content.alt || "Image Block";
       case "map":
         return block.content.label || "Map Block";
-      case "button":
-        return block.content.label || "Button Block";
+      case "branch_choice":
+        return block.content.text || "Branch Choice";
     }
+  };
+
+  const addOption = () => {
+    const newOptionText = `Option ${(block.content.options?.length || 0) + 1}`;
+    const newOption = {
+      id: nanoid(),
+      text: newOptionText,
+      media: { url: "" },
+      targetBranchId: "",
+      targetBranchName: ""
+    };
+    
+    // Auto-create branch if callback provided
+    if (onCreateBranch) {
+      const branchId = onCreateBranch(newOption.id, newOptionText);
+      newOption.targetBranchId = branchId;
+      newOption.targetBranchName = newOptionText;
+    }
+    
+    onUpdate({
+      ...block.content,
+      options: [...(block.content.options || []), newOption]
+    });
+  };
+
+  const updateOption = (optionId: string, updates: any) => {
+    onUpdate({
+      ...block.content,
+      options: block.content.options.map((opt: any) =>
+        opt.id === optionId ? { ...opt, ...updates } : opt
+      )
+    });
+  };
+
+  const deleteOption = (optionId: string) => {
+    onUpdate({
+      ...block.content,
+      options: block.content.options.filter((opt: any) => opt.id !== optionId)
+    });
   };
 
   return (
@@ -217,41 +262,154 @@ export const ContentBlockCard = ({
             </>
           )}
 
-          {block.type === "button" && (
-            <>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Button Label</label>
-                <Input
-                  value={block.content.label}
-                  onChange={(e) =>
-                    onUpdate({ ...block.content, label: e.target.value })
-                  }
-                  placeholder="Learn More"
-                />
+          {block.type === "branch_choice" && (
+            <div className="grid grid-cols-2 gap-6">
+              {/* Left Column - Content Editing */}
+              <div className="space-y-4">
+                {/* Media Section */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Media</label>
+                  <div className="flex items-center gap-3">
+                    {block.content.media?.url ? (
+                      <div className="w-20 h-20 rounded-lg overflow-hidden border">
+                        <img src={block.content.media.url} alt="" className="w-full h-full object-cover" />
+                      </div>
+                    ) : (
+                      <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center">
+                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      </div>
+                    )}
+                    <div className="flex flex-col gap-2">
+                      <Input
+                        type="text"
+                        placeholder="Image URL"
+                        value={block.content.media?.url || ""}
+                        onChange={(e) => onUpdate({ ...block.content, media: { url: e.target.value } })}
+                        className="text-xs"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Text Section */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Text</label>
+                  <Textarea
+                    value={block.content.text || ""}
+                    onChange={(e) => onUpdate({ ...block.content, text: e.target.value })}
+                    placeholder="Describe the branching choice..."
+                    rows={3}
+                  />
+                </div>
+
+                {/* Branching Options */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Branching Options</label>
+                  <div className="space-y-2">
+                    {(block.content.options || []).map((option: any) => (
+                      <Card key={option.id} className="p-3">
+                        <div className="flex items-start gap-2">
+                          <GripVertical className="h-4 w-4 text-muted-foreground mt-2 cursor-move" />
+                          
+                          {/* Option Media Thumbnail */}
+                          <div className="flex-shrink-0">
+                            {option.media?.url ? (
+                              <div className="w-10 h-10 rounded overflow-hidden border">
+                                <img src={option.media.url} alt="" className="w-full h-full object-cover" />
+                              </div>
+                            ) : (
+                              <div className="w-10 h-10 rounded border-2 border-dashed flex items-center justify-center">
+                                <Upload className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Option Text */}
+                          <div className="flex-1 space-y-2">
+                            <Input
+                              value={option.text}
+                              onChange={(e) => updateOption(option.id, { text: e.target.value })}
+                              placeholder="Option text"
+                              className="text-sm"
+                            />
+                            <Input
+                              value={option.media?.url || ""}
+                              onChange={(e) => updateOption(option.id, { media: { url: e.target.value } })}
+                              placeholder="Option image URL"
+                              className="text-xs"
+                            />
+                          </div>
+                          
+                          {/* Delete Button */}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => deleteOption(option.id)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={addOption}
+                    >
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Option
+                    </Button>
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Link to Branch</label>
-                <BranchSelector
-                  branches={branches}
-                  currentBranchId={currentBranchId}
-                  value={block.content.targetBranchId || ""}
-                  onValueChange={(value) =>
-                    onUpdate({ ...block.content, targetBranchId: value })
-                  }
-                  placeholder="Select branch to navigate to"
-                />
+
+              {/* Right Column - Logic Display */}
+              <div className="space-y-4">
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Layout</label>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1">Fullscreen</Button>
+                    <Button variant="outline" size="sm" className="flex-1">Vertical</Button>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Background</label>
+                  <Input type="color" className="h-10" />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Branching Logic</label>
+                  <div className="space-y-3 text-sm">
+                    {(block.content.options || []).map((option: any) => {
+                      const targetBranch = branches.find(b => b.id === option.targetBranchId);
+                      return (
+                        <div key={option.id} className="p-3 bg-muted/50 rounded-lg space-y-1">
+                          <p className="text-xs text-muted-foreground">When chosen option</p>
+                          <p className="font-medium">is <span className="text-primary">"{option.text}"</span></p>
+                          <p className="text-xs text-muted-foreground">then start branch</p>
+                          <BranchSelector
+                            branches={branches}
+                            currentBranchId={currentBranchId}
+                            value={option.targetBranchId || ""}
+                            onValueChange={(value) => {
+                              const branch = branches.find(b => b.id === value);
+                              updateOption(option.id, { 
+                                targetBranchId: value,
+                                targetBranchName: branch?.name || ""
+                              });
+                            }}
+                            placeholder="Select branch"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Or External URL</label>
-                <Input
-                  value={block.content.url || ""}
-                  onChange={(e) =>
-                    onUpdate({ ...block.content, url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
-              </div>
-            </>
+            </div>
           )}
         </div>
       )}

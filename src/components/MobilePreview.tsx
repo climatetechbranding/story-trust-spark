@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
-import { Video, Type, Image as ImageIcon, Map, MousePointerClick, ChevronLeft, ChevronRight } from "lucide-react";
+import { Video, Type, Image as ImageIcon, Map, GitBranch, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface ContentBlock {
   id: string;
-  type: "video" | "text" | "image" | "map" | "button";
+  type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
 }
 
@@ -104,11 +104,40 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                       </div>
                     )}
                     
-                    {currentBlock.type === "button" && (
-                      <div className="p-4">
-                        <button className="w-full py-3 px-4 bg-primary text-primary-foreground rounded-lg text-sm font-medium">
-                          {currentBlock.content.label}
-                        </button>
+                    {currentBlock.type === "branch_choice" && (
+                      <div className="p-4 space-y-4">
+                        {currentBlock.content.media?.url && (
+                          <div className="aspect-video rounded-lg overflow-hidden">
+                            <img 
+                              src={currentBlock.content.media.url} 
+                              alt="" 
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        )}
+                        {currentBlock.content.text && (
+                          <p className="text-sm">{currentBlock.content.text}</p>
+                        )}
+                        <div className="space-y-2">
+                          {(currentBlock.content.options || []).map((option: any) => (
+                            <button
+                              key={option.id}
+                              className="w-full p-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium flex items-center gap-3 hover:bg-primary/90 transition-colors"
+                            >
+                              {option.media?.url && (
+                                <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
+                                  <img 
+                                    src={option.media.url} 
+                                    alt="" 
+                                    className="w-full h-full object-cover"
+                                  />
+                                </div>
+                              )}
+                              <span className="flex-1 text-left">{option.text}</span>
+                              <GitBranch className="h-4 w-4 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
