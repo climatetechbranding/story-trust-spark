@@ -2,6 +2,8 @@ import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
+import { BranchSelector } from "@/components/BranchSelector";
+import { StoryBranch } from "@/hooks/useStories";
 import {
   Video,
   Type,
@@ -25,6 +27,8 @@ interface ContentBlockCardProps {
   onToggle: () => void;
   onDelete: () => void;
   onUpdate: (content: any) => void;
+  branches?: StoryBranch[];
+  currentBranchId?: string;
 }
 
 export const ContentBlockCard = ({
@@ -33,6 +37,8 @@ export const ContentBlockCard = ({
   onToggle,
   onDelete,
   onUpdate,
+  branches = [],
+  currentBranchId = "",
 }: ContentBlockCardProps) => {
   const getIcon = () => {
     switch (block.type) {
@@ -224,13 +230,25 @@ export const ContentBlockCard = ({
                 />
               </div>
               <div>
-                <label className="text-sm font-medium mb-2 block">Action</label>
-                <Input
-                  value={block.content.action}
-                  onChange={(e) =>
-                    onUpdate({ ...block.content, action: e.target.value })
+                <label className="text-sm font-medium mb-2 block">Link to Branch</label>
+                <BranchSelector
+                  branches={branches}
+                  currentBranchId={currentBranchId}
+                  value={block.content.targetBranchId || ""}
+                  onValueChange={(value) =>
+                    onUpdate({ ...block.content, targetBranchId: value })
                   }
-                  placeholder="URL or next section"
+                  placeholder="Select branch to navigate to"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-2 block">Or External URL</label>
+                <Input
+                  value={block.content.url || ""}
+                  onChange={(e) =>
+                    onUpdate({ ...block.content, url: e.target.value })
+                  }
+                  placeholder="https://..."
                 />
               </div>
             </>

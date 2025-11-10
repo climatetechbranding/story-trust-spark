@@ -9,12 +9,21 @@ export interface ContentBlock {
   content: any;
 }
 
+export interface StoryBranch {
+  id: string;
+  name: string;
+  parentId: string | null;
+  blocks: ContentBlock[];
+  icon?: string;
+}
+
 export interface Story {
   id: string;
   name: string;
   status: string;
   category: string;
-  content: ContentBlock[];
+  branches: StoryBranch[];
+  rootBranchId: string;
   created_at: string;
   updated_at: string;
   short_url?: string;
@@ -32,10 +41,27 @@ export const useStories = () => {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      return (data || []).map((story) => ({
-        ...story,
-        content: story.content as unknown as ContentBlock[],
-      })) as Story[];
+      return (data || []).map((story) => {
+        const content = story.content as any;
+        // Handle migration from old flat content to branches
+        if (Array.isArray(content)) {
+          return {
+            ...story,
+            branches: [{
+              id: "root",
+              name: "Main Story",
+              parentId: null,
+              blocks: content as ContentBlock[],
+            }],
+            rootBranchId: "root",
+          };
+        }
+        return {
+          ...story,
+          branches: content.branches || [],
+          rootBranchId: content.rootBranchId || "root",
+        };
+      }) as Story[];
     },
   });
 };
@@ -56,9 +82,25 @@ export const useStory = (storyId: string | undefined) => {
       if (error) throw error;
       if (!data) return null;
       
+      const content = data.content as any;
+      // Handle migration from old flat content to branches
+      if (Array.isArray(content)) {
+        return {
+          ...data,
+          branches: [{
+            id: "root",
+            name: "Main Story",
+            parentId: null,
+            blocks: content as ContentBlock[],
+          }],
+          rootBranchId: "root",
+        } as Story;
+      }
+      
       return {
         ...data,
-        content: data.content as unknown as ContentBlock[],
+        branches: content.branches || [],
+        rootBranchId: content.rootBranchId || "root",
       } as Story;
     },
     enabled: !!storyId && storyId !== "new",
@@ -74,13 +116,15 @@ export const useSaveStory = () => {
     mutationFn: async ({
       id,
       name,
-      content,
+      branches,
+      rootBranchId,
       status,
       category,
     }: {
       id?: string;
       name: string;
-      content: ContentBlock[];
+      branches: StoryBranch[];
+      rootBranchId: string;
       status?: string;
       category?: string;
     }) => {
@@ -93,7 +137,7 @@ export const useSaveStory = () => {
           .from("stories")
           .insert({
             name,
-            content: content as any,
+            content: { branches, rootBranchId } as any,
             status: status || "draft",
             category: category || "general",
             short_url: shortUrl,
@@ -105,7 +149,8 @@ export const useSaveStory = () => {
         if (error) throw error;
         return {
           ...data,
-          content: data.content as unknown as ContentBlock[],
+          branches,
+          rootBranchId,
         } as Story;
       }
 
@@ -114,7 +159,7 @@ export const useSaveStory = () => {
         .from("stories")
         .update({
           name,
-          content: content as any,
+          content: { branches, rootBranchId } as any,
           status: status || "draft",
           category: category || "general",
         })
@@ -125,7 +170,8 @@ export const useSaveStory = () => {
       if (error) throw error;
       return {
         ...data,
-        content: data.content as unknown as ContentBlock[],
+        branches,
+        rootBranchId,
       } as Story;
     },
     onSuccess: (data) => {
@@ -192,9 +238,11 @@ export const usePublishStory = () => {
         .single();
 
       if (error) throw error;
+      const content = data.content as any;
       return {
         ...data,
-        content: data.content as unknown as ContentBlock[],
+        branches: content.branches || [],
+        rootBranchId: content.rootBranchId || "root",
       } as Story;
     },
     onSuccess: () => {
