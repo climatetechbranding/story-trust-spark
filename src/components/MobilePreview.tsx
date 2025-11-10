@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Video, Type, Image as ImageIcon, Map, GitBranch, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useBrandTheme } from "@/contexts/BrandThemeContext";
 
 interface ContentBlock {
   id: string;
@@ -16,6 +17,7 @@ interface MobilePreviewProps {
 
 export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  const { theme } = useBrandTheme();
   
   const goToPrevious = () => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
@@ -60,9 +62,12 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                 {blocks.map((_, i) => (
                   <div
                     key={i}
-                    className={`h-0.5 flex-1 rounded-full transition-all ${
-                      i === currentIndex ? "bg-white" : "bg-white/30"
-                    }`}
+                    className="h-0.5 flex-1 rounded-full transition-all"
+                    style={{
+                      backgroundColor: i === currentIndex 
+                        ? (theme ? `hsl(${theme.primaryColor})` : 'white')
+                        : (theme ? `hsl(${theme.primaryColor} / 0.3)` : 'rgba(255, 255, 255, 0.3)'),
+                    }}
                   />
                 ))}
               </div>
@@ -77,10 +82,22 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                   }`}>
                     {currentBlock.type === "text" && (
                       <div className="p-4">
-                        <h3 className="font-semibold text-lg mb-3">
+                        <h3 
+                          className="font-semibold text-lg mb-3"
+                          style={{
+                            color: theme ? `hsl(${theme.textColor})` : undefined,
+                            fontFamily: theme?.primaryFont || undefined,
+                          }}
+                        >
                           {currentBlock.content.title}
                         </h3>
-                        <p className="text-sm text-muted-foreground leading-relaxed">
+                        <p 
+                          className="text-sm leading-relaxed"
+                          style={{
+                            color: theme ? `hsl(${theme.textColor})` : undefined,
+                            fontFamily: theme?.secondaryFont || undefined,
+                          }}
+                        >
                           {currentBlock.content.body}
                         </p>
                       </div>
@@ -123,7 +140,12 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                           {(currentBlock.content.options || []).map((option: any) => (
                             <button
                               key={option.id}
-                              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-white/90 transition-colors shadow-sm"
+                              className="w-full flex items-center gap-3 p-3 rounded-xl hover:opacity-90 transition-opacity shadow-sm"
+                              style={{
+                                backgroundColor: theme ? `hsl(${theme.primaryColor})` : undefined,
+                                color: 'white',
+                                fontFamily: theme?.primaryFont || undefined,
+                              }}
                             >
                               {option.media?.url ? (
                                 <img
@@ -132,11 +154,11 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                                   className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
                                 />
                               ) : (
-                                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
-                                  <GitBranch className="w-5 h-5 text-muted-foreground" />
+                                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
+                                  <GitBranch className="w-5 h-5" />
                                 </div>
                               )}
-                              <span className="text-sm font-medium text-left flex-1 text-foreground">{option.text}</span>
+                              <span className="text-sm font-medium text-left flex-1">{option.text}</span>
                             </button>
                           ))}
                         </div>

@@ -14,41 +14,89 @@ export type Database = {
   }
   public: {
     Tables: {
+      brand_settings: {
+        Row: {
+          created_at: string
+          favicon_url: string | null
+          id: string
+          primary_color: string
+          primary_font: string
+          secondary_color: string
+          secondary_font: string
+          share_image_url: string | null
+          text_color: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          favicon_url?: string | null
+          id?: string
+          primary_color?: string
+          primary_font?: string
+          secondary_color?: string
+          secondary_font?: string
+          share_image_url?: string | null
+          text_color?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          favicon_url?: string | null
+          id?: string
+          primary_color?: string
+          primary_font?: string
+          secondary_color?: string
+          secondary_font?: string
+          share_image_url?: string | null
+          text_color?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       stories: {
         Row: {
           category: string
           content: Json
           created_at: string
+          custom_branding: Json | null
           id: string
           name: string
           qr_code_url: string | null
           short_url: string | null
           status: string
           updated_at: string
+          use_custom_brand: boolean | null
           user_id: string
         }
         Insert: {
           category: string
           content?: Json
           created_at?: string
+          custom_branding?: Json | null
           id?: string
           name: string
           qr_code_url?: string | null
           short_url?: string | null
           status?: string
           updated_at?: string
+          use_custom_brand?: boolean | null
           user_id: string
         }
         Update: {
           category?: string
           content?: Json
           created_at?: string
+          custom_branding?: Json | null
           id?: string
           name?: string
           qr_code_url?: string | null
           short_url?: string | null
           status?: string
           updated_at?: string
+          use_custom_brand?: boolean | null
           user_id?: string
         }
         Relationships: []

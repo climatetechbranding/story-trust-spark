@@ -3,6 +3,11 @@ import { useParams } from "react-router-dom";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
 import { ChevronUp, X, Play, Pause, Volume2, VolumeX } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { BrandThemeProvider, useBrandTheme } from "@/contexts/BrandThemeContext";
+import { BrandTheme } from "@/types/brand";
+import { brandSettingsToTheme } from "@/hooks/useBrandSettings";
 
 interface StoryNode {
   id: string;
@@ -22,13 +27,13 @@ interface StoryNode {
   options?: { label: string; nextNodeId: string }[];
 }
 
-const StoryViewer = () => {
-  const { id } = useParams();
+const StoryViewerContent = () => {
   const [currentPath, setCurrentPath] = useState<string[]>(["1"]);
   const [showLegal, setShowLegal] = useState(false);
   const [direction, setDirection] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(true);
   const [videoMuted, setVideoMuted] = useState(false);
+  const { theme } = useBrandTheme();
 
   // Sample story structure with branching
   const storyNodes: Record<string, StoryNode> = {
@@ -202,9 +207,12 @@ const StoryViewer = () => {
         {Object.keys(storyNodes).slice(0, 6).map((_, i) => (
           <div
             key={i}
-            className={`h-1 flex-1 rounded-full transition-all ${
-              i < currentPath.length ? "bg-white" : "bg-white/30"
-            }`}
+            className="h-1 flex-1 rounded-full transition-all"
+            style={{
+              backgroundColor: i < currentPath.length 
+                ? (theme ? `hsl(${theme.primaryColor})` : 'white')
+                : (theme ? `hsl(${theme.primaryColor} / 0.3)` : 'rgba(255, 255, 255, 0.3)'),
+            }}
           />
         ))}
       </div>
@@ -401,7 +409,7 @@ const StoryViewer = () => {
 
           {/* Drawer Content */}
           <div className="px-6 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 60px)" }}>
-            <div className="space-y-6">
+            <div className="space-y-6" style={{ borderTopColor: theme ? `hsl(${theme.primaryColor})` : undefined }}>
               {/* Claim Title & Categories */}
               <div>
                 <h3 className="text-2xl font-bold mb-3">{currentNode.substantiation.title}</h3>
@@ -526,6 +534,59 @@ const StoryViewer = () => {
         </motion.div>
       )}
     </motion.div>
+  );
+};
+
+const StoryViewer = () => {
+  const { id } = useParams();
+
+  // Fetch story data (if we had real stories in DB)
+  const { data: story } = useQuery({
+    queryKey: ["story", id],
+    queryFn: async () => {
+      if (!id || id === "preview") return null;
+      
+      const { data, error } = await supabase
+        .from("stories")
+        .select("*")
+        .eq("id", id)
+        .single();
+      
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!id && id !== "preview",
+  });
+
+  // Fetch default brand settings
+  const { data: defaultBrandSettings } = useQuery({
+    queryKey: ["brandSettings", story?.user_id],
+    queryFn: async () => {
+      const userId = story?.user_id || "00000000-0000-0000-0000-000000000000";
+      
+      const { data, error } = await supabase
+        .from("brand_settings")
+        .select("*")
+        .eq("user_id", userId)
+        .single();
+      
+      if (error && error.code !== "PGRST116") throw error;
+      return data;
+    },
+    enabled: !!story?.user_id || id === "preview",
+  });
+
+  // Determine theme: use story's custom branding or user's default
+  const theme: BrandTheme | null = story?.use_custom_brand && story?.custom_branding
+    ? (story.custom_branding as unknown as BrandTheme)
+    : defaultBrandSettings
+      ? brandSettingsToTheme(defaultBrandSettings)
+      : null;
+
+  return (
+    <BrandThemeProvider theme={theme}>
+      <StoryViewerContent />
+    </BrandThemeProvider>
   );
 };
 

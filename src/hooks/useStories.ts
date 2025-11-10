@@ -172,6 +172,23 @@ export const useSaveStory = () => {
       status?: string;
       category?: string;
     }) => {
+      // Fetch current brand settings to snapshot
+      const { data: brandSettings } = await supabase
+        .from("brand_settings")
+        .select("*")
+        .eq("user_id", "00000000-0000-0000-0000-000000000000")
+        .single();
+
+      const brandSnapshot = brandSettings ? {
+        primaryColor: brandSettings.primary_color,
+        secondaryColor: brandSettings.secondary_color,
+        textColor: brandSettings.text_color,
+        primaryFont: brandSettings.primary_font,
+        secondaryFont: brandSettings.secondary_font,
+        faviconUrl: brandSettings.favicon_url,
+        shareImageUrl: brandSettings.share_image_url,
+      } : null;
+
       // If no ID, create new story
       if (!id || id === "new") {
         const newId = crypto.randomUUID();
@@ -186,6 +203,8 @@ export const useSaveStory = () => {
             category: category || "general",
             short_url: shortUrl,
             user_id: "00000000-0000-0000-0000-000000000000", // POC placeholder
+            custom_branding: brandSnapshot,
+            use_custom_brand: true,
           })
           .select()
           .single();
