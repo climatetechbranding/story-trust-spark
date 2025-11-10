@@ -14,7 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      stories: {
+        Row: {
+          category: string
+          content: Json
+          created_at: string
+          id: string
+          name: string
+          qr_code_url: string | null
+          short_url: string | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          category: string
+          content?: Json
+          created_at?: string
+          id?: string
+          name: string
+          qr_code_url?: string | null
+          short_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          category?: string
+          content?: Json
+          created_at?: string
+          id?: string
+          name?: string
+          qr_code_url?: string | null
+          short_url?: string | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      story_analytics: {
+        Row: {
+          created_at: string
+          device_type: string | null
+          id: string
+          is_unique_visitor: boolean | null
+          location: string | null
+          referrer: string | null
+          scan_timestamp: string
+          story_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          is_unique_visitor?: boolean | null
+          location?: string | null
+          referrer?: string | null
+          scan_timestamp?: string
+          story_id: string
+        }
+        Update: {
+          created_at?: string
+          device_type?: string | null
+          id?: string
+          is_unique_visitor?: boolean | null
+          location?: string | null
+          referrer?: string | null
+          scan_timestamp?: string
+          story_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "story_analytics_story_id_fkey"
+            columns: ["story_id"]
+            isOneToOne: false
+            referencedRelation: "stories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

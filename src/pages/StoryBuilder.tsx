@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -12,23 +12,35 @@ import {
   MousePointerClick,
   Smartphone,
   Save,
-  Eye
+  Eye,
+  Loader2
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { ContentBlockCard } from "@/components/ContentBlockCard";
 import { MobilePreview } from "@/components/MobilePreview";
-
-interface ContentBlock {
-  id: string;
-  type: "video" | "text" | "image" | "map" | "button";
-  content: any;
-}
+import { useStory, useSaveStory, usePublishStory, ContentBlock } from "@/hooks/useStories";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const StoryBuilder = () => {
   const navigate = useNavigate();
+  const { id: storyId } = useParams<{ id: string }>();
   const [storyName, setStoryName] = useState("New Sustainability Story");
   const [blocks, setBlocks] = useState<ContentBlock[]>([]);
   const [selectedBlock, setSelectedBlock] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  const { data: story, isLoading } = useStory(storyId);
+  const saveStory = useSaveStory();
+  const publishStory = usePublishStory();
+
+  // Load story data when fetched
+  useEffect(() => {
+    if (story) {
+      setStoryName(story.name);
+      setBlocks(story.content || []);
+      setHasUnsavedChanges(false);
+    }
+  }, [story]);
 
   const blockTypes = [
     { type: "text" as const, icon: Type, label: "Text", color: "text-blue-600" },
@@ -46,12 +58,14 @@ const StoryBuilder = () => {
     };
     setBlocks([...blocks, newBlock]);
     setSelectedBlock(newBlock.id);
+    setHasUnsavedChanges(true);
   };
 
   const updateBlock = (id: string, content: any) => {
     setBlocks(blocks.map((block) => 
       block.id === id ? { ...block, content } : block
     ));
+    setHasUnsavedChanges(true);
   };
 
   const deleteBlock = (id: string) => {
@@ -59,6 +73,44 @@ const StoryBuilder = () => {
     if (selectedBlock === id) {
       setSelectedBlock(null);
     }
+    setHasUnsavedChanges(true);
+  };
+
+  const handleSave = async () => {
+    const result = await saveStory.mutateAsync({
+      id: storyId,
+      name: storyName,
+      content: blocks,
+    });
+
+    // If we just created a new story, navigate to its edit page
+    if (storyId === "new" && result.id) {
+      navigate(`/story/${result.id}/edit`, { replace: true });
+    }
+    
+    setHasUnsavedChanges(false);
+  };
+
+  const handlePublish = async () => {
+    // Save first if there are unsaved changes
+    if (hasUnsavedChanges || storyId === "new") {
+      const result = await saveStory.mutateAsync({
+        id: storyId,
+        name: storyName,
+        content: blocks,
+      });
+      
+      if (result.id) {
+        await publishStory.mutateAsync(result.id);
+        if (storyId === "new") {
+          navigate(`/story/${result.id}/edit`, { replace: true });
+        }
+      }
+    } else if (story?.id) {
+      await publishStory.mutateAsync(story.id);
+    }
+    
+    setHasUnsavedChanges(false);
   };
 
   const getDefaultContent = (type: ContentBlock["type"]) => {
@@ -78,6 +130,24 @@ const StoryBuilder = () => {
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <header className="border-b bg-card sticky top-0 z-10">
+          <div className="container mx-auto px-4 py-4">
+            <Skeleton className="h-10 w-64" />
+          </div>
+        </header>
+        <div className="container mx-auto px-4 py-8">
+          <div className="space-y-4">
+            <Skeleton className="h-32 w-full" />
+            <Skeleton className="h-32 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -91,21 +161,45 @@ const StoryBuilder = () => {
               </Button>
               <Input
                 value={storyName}
-                onChange={(e) => setStoryName(e.target.value)}
+                onChange={(e) => {
+                  setStoryName(e.target.value);
+                  setHasUnsavedChanges(true);
+                }}
                 className="text-lg font-semibold border-none focus-visible:ring-0 w-64"
               />
+              {hasUnsavedChanges && (
+                <span className="text-xs text-muted-foreground">Unsaved changes</span>
+              )}
             </div>
             <div className="flex items-center gap-2">
-              <Button variant="outline" onClick={() => navigate(`/story/preview`)}>
+              <Button 
+                variant="outline" 
+                onClick={() => navigate(story?.id ? `/story/${story.id}` : `/story/preview`)}
+              >
                 <Smartphone className="h-4 w-4 mr-2" />
                 Preview
               </Button>
-              <Button variant="outline">
-                <Save className="h-4 w-4 mr-2" />
+              <Button 
+                variant="outline"
+                onClick={handleSave}
+                disabled={saveStory.isPending}
+              >
+                {saveStory.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Save className="h-4 w-4 mr-2" />
+                )}
                 Save Draft
               </Button>
-              <Button>
-                <Eye className="h-4 w-4 mr-2" />
+              <Button
+                onClick={handlePublish}
+                disabled={publishStory.isPending || saveStory.isPending}
+              >
+                {(publishStory.isPending || saveStory.isPending) ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Eye className="h-4 w-4 mr-2" />
+                )}
                 Publish
               </Button>
             </div>
