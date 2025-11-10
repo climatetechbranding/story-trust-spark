@@ -57,6 +57,7 @@ const StoryBuilder = () => {
     { type: "video" as const, icon: Video, label: "Video", color: "text-purple-600" },
     { type: "image" as const, icon: ImageIcon, label: "Image", color: "text-green-600" },
     { type: "map" as const, icon: Map, label: "Map", color: "text-orange-600" },
+    { type: "branch_choice" as const, icon: GitBranch, label: "Branch Choice", color: "text-pink-600" },
   ];
 
   const addBlock = (type: ContentBlock["type"]) => {
@@ -107,11 +108,6 @@ const StoryBuilder = () => {
     
     setBranches(prev => [...prev, newBranch]);
     setHasUnsavedChanges(true);
-    
-    // Auto-navigate to new branch
-    setTimeout(() => {
-      setCurrentBranchId(newBranch.id);
-    }, 100);
     
     return newBranch.id;
   };
@@ -377,16 +373,6 @@ const StoryBuilder = () => {
               </div>
             )}
 
-            {blocks.length > 0 && (
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => addBlock("branch_choice")}
-              >
-                <GitBranch className="h-4 w-4 mr-2" />
-                Create Branch Choice
-              </Button>
-            )}
           </div>
 
           {/* Mobile Preview */}

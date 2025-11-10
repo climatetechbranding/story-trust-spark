@@ -105,36 +105,38 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                     )}
                     
                     {currentBlock.type === "branch_choice" && (
-                      <div className="p-4 space-y-4">
+                      <div 
+                        className="space-y-4 p-6 rounded-2xl h-full flex flex-col justify-center" 
+                        style={{ backgroundColor: currentBlock.content.backgroundColor || "#f3f4f6" }}
+                      >
                         {currentBlock.content.media?.url && (
-                          <div className="aspect-video rounded-lg overflow-hidden">
-                            <img 
-                              src={currentBlock.content.media.url} 
-                              alt="" 
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
+                          <img
+                            src={currentBlock.content.media.url}
+                            alt=""
+                            className="w-full h-32 object-cover rounded-lg"
+                          />
                         )}
                         {currentBlock.content.text && (
-                          <p className="text-sm">{currentBlock.content.text}</p>
+                          <p className="text-sm text-foreground">{currentBlock.content.text}</p>
                         )}
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {(currentBlock.content.options || []).map((option: any) => (
                             <button
                               key={option.id}
-                              className="w-full p-3 bg-primary text-primary-foreground rounded-lg text-sm font-medium flex items-center gap-3 hover:bg-primary/90 transition-colors"
+                              className="w-full flex items-center gap-3 p-3 rounded-xl bg-white hover:bg-white/90 transition-colors shadow-sm"
                             >
-                              {option.media?.url && (
-                                <div className="w-10 h-10 rounded overflow-hidden flex-shrink-0">
-                                  <img 
-                                    src={option.media.url} 
-                                    alt="" 
-                                    className="w-full h-full object-cover"
-                                  />
+                              {option.media?.url ? (
+                                <img
+                                  src={option.media.url}
+                                  alt=""
+                                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center flex-shrink-0">
+                                  <GitBranch className="w-5 h-5 text-muted-foreground" />
                                 </div>
                               )}
-                              <span className="flex-1 text-left">{option.text}</span>
-                              <GitBranch className="h-4 w-4 flex-shrink-0" />
+                              <span className="text-sm font-medium text-left flex-1 text-foreground">{option.text}</span>
                             </button>
                           ))}
                         </div>

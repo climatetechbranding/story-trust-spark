@@ -266,6 +266,17 @@ export const ContentBlockCard = ({
             <div className="grid grid-cols-2 gap-6">
               {/* Left Column - Content Editing */}
               <div className="space-y-4">
+                {/* Background Section */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Background</label>
+                  <Input
+                    type="color"
+                    value={block.content.backgroundColor || "#f3f4f6"}
+                    onChange={(e) => onUpdate({ ...block.content, backgroundColor: e.target.value })}
+                    className="h-10 w-full"
+                  />
+                </div>
+
                 {/* Media Section */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Media</label>
@@ -367,19 +378,6 @@ export const ContentBlockCard = ({
 
               {/* Right Column - Logic Display */}
               <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Layout</label>
-                  <div className="flex gap-2">
-                    <Button variant="outline" size="sm" className="flex-1">Fullscreen</Button>
-                    <Button variant="outline" size="sm" className="flex-1">Vertical</Button>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Background</label>
-                  <Input type="color" className="h-10" />
-                </div>
-
                 <div>
                   <label className="text-sm font-medium mb-2 block">Branching Logic</label>
                   <div className="space-y-3 text-sm">
