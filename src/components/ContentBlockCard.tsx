@@ -5,6 +5,16 @@ import { Button } from "@/components/ui/button";
 import { BranchSelector } from "@/components/BranchSelector";
 import { StoryBranch } from "@/hooks/useStories";
 import { nanoid } from "nanoid";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { VideoChapterList } from "@/components/VideoChapterList";
+import { VideoHotspotList } from "@/components/VideoHotspotList";
+import { TipTapEditor } from "@/components/TipTapEditor";
+import { GreenClaimsDetector } from "@/components/GreenClaimsDetector";
+import { NodeSettingsPanel } from "@/components/NodeSettingsPanel";
+import { useVideoUpload } from "@/hooks/useVideoUpload";
+import { useCallback } from "react";
+import { useDropzone } from "react-dropzone";
 import {
   Video,
   Type,
@@ -23,6 +33,7 @@ interface ContentBlock {
   id: string;
   type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
+  settings?: any;
 }
 
 interface ContentBlockCardProps {
@@ -46,6 +57,25 @@ export const ContentBlockCard = ({
   currentBranchId = "",
   onCreateBranch,
 }: ContentBlockCardProps) => {
+  const { uploadVideo, uploading, progress } = useVideoUpload();
+  
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0 && block.type === "video") {
+      const file = acceptedFiles[0];
+      const url = await uploadVideo(file);
+      if (url) {
+        onUpdate({ ...block.content, url });
+      }
+    }
+  }, [block.type, block.content, uploadVideo, onUpdate]);
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { 'video/*': ['.mp4', '.mov', '.webm'] },
+    maxFiles: 1,
+    disabled: uploading,
+  });
+
   const getIcon = () => {
     switch (block.type) {
       case "text":
@@ -161,40 +191,110 @@ export const ContentBlockCard = ({
               </div>
               <div>
                 <label className="text-sm font-medium mb-2 block">Content</label>
-                <Textarea
-                  value={block.content.body}
-                  onChange={(e) =>
-                    onUpdate({ ...block.content, body: e.target.value })
+                <TipTapEditor
+                  content={block.content.html || block.content.body || ""}
+                  onChange={(html, plainText) => 
+                    onUpdate({ ...block.content, html, body: plainText, plainText })
                   }
-                  placeholder="Write your story..."
-                  rows={6}
+                  maxCharacters={500}
                 />
               </div>
+              
+              {/* Green Claims Detector */}
+              {block.content.plainText && (
+                <GreenClaimsDetector text={block.content.plainText} />
+              )}
             </>
           )}
 
           {block.type === "video" && (
             <>
+              {/* Video Upload */}
               <div>
-                <label className="text-sm font-medium mb-2 block">Video URL</label>
-                <Input
-                  value={block.content.url}
-                  onChange={(e) =>
-                    onUpdate({ ...block.content, url: e.target.value })
-                  }
-                  placeholder="https://..."
-                />
+                <label className="text-sm font-medium mb-2 block">Video</label>
+                {!block.content.url ? (
+                  <div {...getRootProps()} className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${isDragActive ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'}`}>
+                    <input {...getInputProps()} />
+                    <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">
+                      {uploading ? `Uploading... ${progress}%` : 'Drag & drop video or click to browse'}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">MP4, MOV, WebM (max 200MB)</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="aspect-video bg-muted rounded-lg overflow-hidden">
+                      <video src={block.content.url} controls className="w-full h-full" />
+                    </div>
+                    <Button variant="outline" size="sm" onClick={() => onUpdate({ ...block.content, url: "" })}>
+                      Change Video
+                    </Button>
+                  </div>
+                )}
               </div>
-              <div>
-                <label className="text-sm font-medium mb-2 block">Caption</label>
-                <Input
-                  value={block.content.caption}
-                  onChange={(e) =>
-                    onUpdate({ ...block.content, caption: e.target.value })
-                  }
-                  placeholder="Video description"
-                />
-              </div>
+
+              {block.content.url && (
+                <>
+                  {/* Basic Settings */}
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Title</label>
+                    <Input
+                      value={block.content.title || ""}
+                      onChange={(e) => onUpdate({ ...block.content, title: e.target.value })}
+                      placeholder="Video title"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Description</label>
+                    <Textarea
+                      value={block.content.description || ""}
+                      onChange={(e) => onUpdate({ ...block.content, description: e.target.value })}
+                      placeholder="Video description"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="flex gap-4">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="autoplay"
+                        checked={block.content.autoplay !== false}
+                        onCheckedChange={(checked) => onUpdate({ ...block.content, autoplay: checked })}
+                      />
+                      <Label htmlFor="autoplay" className="text-xs">Autoplay</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="loop"
+                        checked={block.content.loop || false}
+                        onCheckedChange={(checked) => onUpdate({ ...block.content, loop: checked })}
+                      />
+                      <Label htmlFor="loop" className="text-xs">Loop</Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="muted"
+                        checked={block.content.muted || false}
+                        onCheckedChange={(checked) => onUpdate({ ...block.content, muted: checked })}
+                      />
+                      <Label htmlFor="muted" className="text-xs">Mute by default</Label>
+                    </div>
+                  </div>
+
+                  {/* Chapters */}
+                  <VideoChapterList
+                    chapters={block.content.chapters || []}
+                    onChange={(chapters) => onUpdate({ ...block.content, chapters })}
+                  />
+
+                  {/* Hotspots */}
+                  <VideoHotspotList
+                    hotspots={block.content.hotspots || []}
+                    onChange={(hotspots) => onUpdate({ ...block.content, hotspots })}
+                  />
+                </>
+              )}
             </>
           )}
 
@@ -409,6 +509,19 @@ export const ContentBlockCard = ({
               </div>
             </div>
           )}
+
+          {/* Node Settings Panel - Show for all types */}
+          <NodeSettingsPanel
+            settings={block.settings || {}}
+            onChange={(settings) => {
+              // Update both content and settings
+              const updatedBlock = { ...block, settings };
+              onUpdate(block.content);
+              // We need to pass the whole block back, but onUpdate only takes content
+              // So we'll store settings alongside content
+              onUpdate({ ...block.content, __settings: settings });
+            }}
+          />
         </div>
       )}
     </Card>

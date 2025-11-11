@@ -3,11 +3,14 @@ import { Card } from "@/components/ui/card";
 import { Video, Type, Image as ImageIcon, Map, GitBranch, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useBrandTheme } from "@/contexts/BrandThemeContext";
+import { motion } from "framer-motion";
+import { animationVariants, animationDurations, paddingClasses, alignmentClasses } from "@/lib/animation-utils";
 
 interface ContentBlock {
   id: string;
   type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
+  settings?: any;
 }
 
 interface MobilePreviewProps {
@@ -28,6 +31,15 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
   };
   
   const currentBlock = blocks[currentIndex];
+  const settings = currentBlock?.content?.__settings || currentBlock?.settings || {};
+  const appearance = settings.appearance || {};
+  const animation = settings.animation || {};
+  
+  const containerStyle: React.CSSProperties = {
+    backgroundColor: appearance.background || undefined,
+  };
+
+  const containerClass = `w-full ${paddingClasses[appearance.padding || 'normal']} ${alignmentClasses[appearance.alignment || 'center']}`;
   
   return (
     <div className="sticky top-24">
@@ -73,13 +85,20 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
               </div>
               
               {/* Current Block Display */}
-              <div className="h-full p-4 pt-8 flex items-center justify-center">
+              <div className={`h-full pt-8 flex ${containerClass}`} style={containerStyle}>
                 {currentBlock && (
-                  <div className={`w-full ${
-                    selectedBlock === currentBlock.id
-                      ? "ring-2 ring-primary bg-primary/5 rounded-lg"
-                      : ""
-                  }`}>
+                  <motion.div 
+                    className={`w-full ${
+                      selectedBlock === currentBlock.id
+                        ? "ring-2 ring-primary bg-primary/5 rounded-lg"
+                        : ""
+                    }`}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    variants={animationVariants[animation.entrance || 'fade']}
+                    transition={{ duration: animationDurations[animation.duration || 'normal'] }}
+                  >
                     {currentBlock.type === "text" && (
                       <div className="p-4">
                         <h3 
@@ -91,21 +110,53 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                         >
                           {currentBlock.content.title}
                         </h3>
-                        <p 
-                          className="text-sm leading-relaxed"
-                          style={{
-                            color: theme ? `hsl(${theme.textColor})` : undefined,
-                            fontFamily: theme?.secondaryFont || undefined,
-                          }}
-                        >
-                          {currentBlock.content.body}
-                        </p>
+                        {currentBlock.content.html ? (
+                          <div 
+                            className="text-sm leading-relaxed prose prose-sm max-w-none"
+                            style={{
+                              color: theme ? `hsl(${theme.textColor})` : undefined,
+                              fontFamily: theme?.secondaryFont || undefined,
+                            }}
+                            dangerouslySetInnerHTML={{ __html: currentBlock.content.html }}
+                          />
+                        ) : (
+                          <p 
+                            className="text-sm leading-relaxed"
+                            style={{
+                              color: theme ? `hsl(${theme.textColor})` : undefined,
+                              fontFamily: theme?.secondaryFont || undefined,
+                            }}
+                          >
+                            {currentBlock.content.body}
+                          </p>
+                        )}
                       </div>
                     )}
                     
                     {currentBlock.type === "video" && (
-                      <div className="aspect-video bg-muted/50 flex items-center justify-center rounded-lg">
-                        <Video className="h-12 w-12 text-muted-foreground" />
+                      <div className="space-y-2">
+                        {currentBlock.content.url ? (
+                          <div className="aspect-video bg-muted/50 rounded-lg overflow-hidden">
+                            <video 
+                              src={currentBlock.content.url} 
+                              controls 
+                              autoPlay={currentBlock.content.autoplay !== false}
+                              loop={currentBlock.content.loop}
+                              muted={currentBlock.content.muted}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <div className="aspect-video bg-muted/50 flex items-center justify-center rounded-lg">
+                            <Video className="h-12 w-12 text-muted-foreground" />
+                          </div>
+                        )}
+                        {currentBlock.content.title && (
+                          <p className="text-sm font-medium px-2">{currentBlock.content.title}</p>
+                        )}
+                        {currentBlock.content.description && (
+                          <p className="text-xs text-muted-foreground px-2">{currentBlock.content.description}</p>
+                        )}
                       </div>
                     )}
                     
@@ -164,7 +215,7 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                         </div>
                       </div>
                     )}
-                  </div>
+                  </motion.div>
                 )}
               </div>
               

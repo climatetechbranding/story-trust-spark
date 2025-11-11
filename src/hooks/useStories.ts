@@ -7,6 +7,7 @@ export interface ContentBlock {
   id: string;
   type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
+  settings?: any;
 }
 
 export interface StoryBranch {

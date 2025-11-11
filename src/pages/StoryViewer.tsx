@@ -247,16 +247,19 @@ const StoryViewerContent = () => {
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
               <video
                 className="h-full w-full object-cover"
-                autoPlay
-                loop
-                muted={videoMuted}
+                autoPlay={currentNode.content.autoplay !== false}
+                loop={currentNode.content.loop}
+                muted={videoMuted || currentNode.content.muted}
                 playsInline
               >
-                <source src={currentNode.content.videoUrl} type="video/mp4" />
+                <source src={currentNode.content.videoUrl || currentNode.content.url} type="video/mp4" />
               </video>
               
               <div className="absolute bottom-20 left-0 right-0 p-6 text-white">
-                <h1 className="text-3xl font-bold mb-2">{currentNode.content.caption}</h1>
+                <h1 className="text-3xl font-bold mb-2">{currentNode.content.caption || currentNode.content.title}</h1>
+                {currentNode.content.description && (
+                  <p className="text-sm opacity-90">{currentNode.content.description}</p>
+                )}
                 {currentNode.greenClaim && (
                   <div className="flex items-center gap-2 text-sm opacity-75 mt-4">
                     <ChevronUp className="h-4 w-4 animate-bounce" />
@@ -294,9 +297,16 @@ const StoryViewerContent = () => {
                   <div className="text-7xl mb-6">{currentNode.content.icon}</div>
                 )}
                 <h2 className="text-4xl font-bold leading-tight">{currentNode.content.title}</h2>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  {currentNode.content.body}
-                </p>
+                {currentNode.content.html ? (
+                  <div 
+                    className="text-lg leading-relaxed prose prose-lg max-w-none"
+                    dangerouslySetInnerHTML={{ __html: currentNode.content.html }}
+                  />
+                ) : (
+                  <p className="text-lg text-muted-foreground leading-relaxed">
+                    {currentNode.content.body}
+                  </p>
+                )}
                 {currentNode.greenClaim && (
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6">
                     <ChevronUp className="h-4 w-4 animate-bounce" />
