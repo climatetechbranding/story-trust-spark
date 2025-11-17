@@ -90,11 +90,13 @@ const StoryBuilder = () => {
   };
 
   const updateCurrentBranchBlocks = (newBlocks: ContentBlock[]) => {
-    setBranches(branches.map((branch) =>
-      branch.id === currentBranchId
-        ? { ...branch, blocks: newBlocks }
-        : branch
-    ));
+    setBranches(prev =>
+      prev.map(branch =>
+        branch.id === currentBranchId
+          ? { ...branch, blocks: newBlocks }
+          : branch
+      )
+    );
   };
 
   const createBranchForOption = (optionId: string, branchName: string, branchIcon?: string): string => {
@@ -123,7 +125,7 @@ const StoryBuilder = () => {
     setSelectedBlock(null);
   };
 
-  // Listen for branch navigation events from ContentBlockCard
+  // Listen for branch navigation and name update events from ContentBlockCard
   useEffect(() => {
     const handleNavigate = (event: any) => {
       console.log('Navigate event received:', event.detail);
@@ -135,8 +137,25 @@ const StoryBuilder = () => {
         }
       }
     };
+    
+    const handleUpdateBranchName = (event: any) => {
+      if (event.detail?.branchId && event.detail?.name) {
+        setBranches(prev =>
+          prev.map(branch =>
+            branch.id === event.detail.branchId
+              ? { ...branch, name: event.detail.name }
+              : branch
+          )
+        );
+      }
+    };
+    
     window.addEventListener('navigateToBranch', handleNavigate);
-    return () => window.removeEventListener('navigateToBranch', handleNavigate);
+    window.addEventListener('updateBranchName', handleUpdateBranchName);
+    return () => {
+      window.removeEventListener('navigateToBranch', handleNavigate);
+      window.removeEventListener('updateBranchName', handleUpdateBranchName);
+    };
   }, [branches]);
 
   const getBreadcrumbs = () => {

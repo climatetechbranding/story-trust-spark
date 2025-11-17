@@ -132,12 +132,25 @@ export const ContentBlockCard = ({
   };
 
   const updateOption = (optionId: string, updates: any) => {
+    const updatedOptions = block.content.options.map((opt: any) =>
+      opt.id === optionId ? { ...opt, ...updates } : opt
+    );
+    
     onUpdate({
       ...block.content,
-      options: block.content.options.map((opt: any) =>
-        opt.id === optionId ? { ...opt, ...updates } : opt
-      )
+      options: updatedOptions
     });
+    
+    // If text was updated, sync the branch name
+    if (updates.text && updates.text !== "") {
+      const option = block.content.options.find((opt: any) => opt.id === optionId);
+      if (option?.targetBranchId) {
+        const event = new CustomEvent('updateBranchName', {
+          detail: { branchId: option.targetBranchId, name: updates.text }
+        });
+        window.dispatchEvent(event);
+      }
+    }
   };
 
   const deleteOption = (optionId: string) => {
