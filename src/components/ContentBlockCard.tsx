@@ -109,15 +109,16 @@ export const ContentBlockCard = ({
 
   const addOption = () => {
     const newOptionText = `Option ${(block.content.options?.length || 0) + 1}`;
+    const newOptionId = nanoid();
     
     // Auto-create branch if callback provided
     let branchId = "";
     if (onCreateBranch) {
-      branchId = onCreateBranch(nanoid(), newOptionText);
+      branchId = onCreateBranch(newOptionId, newOptionText);
     }
     
     const newOption = {
-      id: nanoid(),
+      id: newOptionId,
       text: newOptionText,
       media: { url: "" },
       targetBranchId: branchId,
@@ -515,14 +516,20 @@ export const ContentBlockCard = ({
                     <div className="space-y-2">
                       {(block.content.options || []).map((option: any) => {
                         const targetBranch = branches.find(b => b.id === option.targetBranchId);
-                        if (!targetBranch) return null;
+                        if (!targetBranch) {
+                          console.log('No branch found for option:', option.id, 'targetBranchId:', option.targetBranchId);
+                          return null;
+                        }
                         return (
                           <Button
                             key={option.id}
                             variant="outline"
                             size="sm"
                             className="w-full justify-start text-xs"
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              console.log('Navigating to branch:', option.targetBranchId, targetBranch.name);
                               // Navigate to branch - need to pass this up
                               const event = new CustomEvent('navigateToBranch', { 
                                 detail: { branchId: option.targetBranchId } 

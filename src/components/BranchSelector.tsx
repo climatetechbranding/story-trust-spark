@@ -18,6 +18,8 @@ export const BranchSelector = ({
 }: BranchSelectorProps) => {
   // Filter out current branch to prevent circular references
   const availableBranches = branches.filter((b) => b.id !== currentBranchId);
+  
+  console.log('BranchSelector - Available branches:', availableBranches.length, 'Current value:', value);
 
   return (
     <Select value={value} onValueChange={onValueChange}>
@@ -25,14 +27,18 @@ export const BranchSelector = ({
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>
-        {availableBranches.map((branch) => (
-          <SelectItem key={branch.id} value={branch.id}>
-            {branch.icon && (
-              <img src={branch.icon} alt="" className="inline-block w-4 h-4 mr-2" />
-            )}
-            {branch.name}
-          </SelectItem>
-        ))}
+        {availableBranches.length === 0 ? (
+          <div className="p-2 text-sm text-muted-foreground">No branches available</div>
+        ) : (
+          availableBranches.map((branch) => (
+            <SelectItem key={branch.id} value={branch.id}>
+              {branch.icon && (
+                <img src={branch.icon} alt="" className="inline-block w-4 h-4 mr-2" />
+              )}
+              {branch.name}
+            </SelectItem>
+          ))
+        )}
       </SelectContent>
     </Select>
   );
