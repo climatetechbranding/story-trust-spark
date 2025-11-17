@@ -98,18 +98,24 @@ const StoryBuilder = () => {
   };
 
   const createBranchForOption = (optionId: string, branchName: string, branchIcon?: string): string => {
+    const newBranchId = nanoid();
     const newBranch: StoryBranch = {
-      id: nanoid(),
+      id: newBranchId,
       name: branchName,
       parentId: currentBranchId,
       blocks: [],
       icon: branchIcon,
     };
     
-    setBranches(prev => [...prev, newBranch]);
+    // Update branches immediately
+    setBranches(prev => {
+      const updated = [...prev, newBranch];
+      console.log('Created new branch:', newBranchId, 'Total branches:', updated.length);
+      return updated;
+    });
     setHasUnsavedChanges(true);
     
-    return newBranch.id;
+    return newBranchId;
   };
 
   const navigateToBranch = (branchId: string) => {
@@ -120,13 +126,18 @@ const StoryBuilder = () => {
   // Listen for branch navigation events from ContentBlockCard
   useEffect(() => {
     const handleNavigate = (event: any) => {
+      console.log('Navigate event received:', event.detail);
       if (event.detail?.branchId) {
-        navigateToBranch(event.detail.branchId);
+        const targetBranch = branches.find(b => b.id === event.detail.branchId);
+        console.log('Target branch found:', targetBranch);
+        if (targetBranch) {
+          navigateToBranch(event.detail.branchId);
+        }
       }
     };
     window.addEventListener('navigateToBranch', handleNavigate);
     return () => window.removeEventListener('navigateToBranch', handleNavigate);
-  }, []);
+  }, [branches]);
 
   const getBreadcrumbs = () => {
     const breadcrumbs: StoryBranch[] = [];
