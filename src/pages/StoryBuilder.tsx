@@ -117,6 +117,17 @@ const StoryBuilder = () => {
     setSelectedBlock(null);
   };
 
+  // Listen for branch navigation events from ContentBlockCard
+  useEffect(() => {
+    const handleNavigate = (event: any) => {
+      if (event.detail?.branchId) {
+        navigateToBranch(event.detail.branchId);
+      }
+    };
+    window.addEventListener('navigateToBranch', handleNavigate);
+    return () => window.removeEventListener('navigateToBranch', handleNavigate);
+  }, []);
+
   const getBreadcrumbs = () => {
     const breadcrumbs: StoryBranch[] = [];
     let branch = currentBranch;

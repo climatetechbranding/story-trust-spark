@@ -27,6 +27,7 @@ import {
   Plus,
   GripVertical,
   Upload,
+  ChevronRight,
 } from "lucide-react";
 
 interface ContentBlock {
@@ -108,20 +109,20 @@ export const ContentBlockCard = ({
 
   const addOption = () => {
     const newOptionText = `Option ${(block.content.options?.length || 0) + 1}`;
+    
+    // Auto-create branch if callback provided
+    let branchId = "";
+    if (onCreateBranch) {
+      branchId = onCreateBranch(nanoid(), newOptionText);
+    }
+    
     const newOption = {
       id: nanoid(),
       text: newOptionText,
       media: { url: "" },
-      targetBranchId: "",
-      targetBranchName: ""
+      targetBranchId: branchId,
+      targetBranchName: newOptionText
     };
-    
-    // Auto-create branch if callback provided
-    if (onCreateBranch) {
-      const branchId = onCreateBranch(newOption.id, newOptionText);
-      newOption.targetBranchId = branchId;
-      newOption.targetBranchName = newOptionText;
-    }
     
     onUpdate({
       ...block.content,
@@ -506,6 +507,38 @@ export const ContentBlockCard = ({
                     })}
                   </div>
                 </div>
+
+                {/* Sub-branch Navigation */}
+                {(block.content.options || []).some((opt: any) => opt.targetBranchId) && (
+                  <div className="border-t pt-4">
+                    <label className="text-sm font-medium mb-2 block">Edit Sub-branches</label>
+                    <div className="space-y-2">
+                      {(block.content.options || []).map((option: any) => {
+                        const targetBranch = branches.find(b => b.id === option.targetBranchId);
+                        if (!targetBranch) return null;
+                        return (
+                          <Button
+                            key={option.id}
+                            variant="outline"
+                            size="sm"
+                            className="w-full justify-start text-xs"
+                            onClick={() => {
+                              // Navigate to branch - need to pass this up
+                              const event = new CustomEvent('navigateToBranch', { 
+                                detail: { branchId: option.targetBranchId } 
+                              });
+                              window.dispatchEvent(event);
+                            }}
+                          >
+                            <GitBranch className="h-3 w-3 mr-2" />
+                            {targetBranch.name}
+                            <ChevronRight className="h-3 w-3 ml-auto" />
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}

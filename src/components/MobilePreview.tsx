@@ -35,9 +35,10 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
   const appearance = settings.appearance || {};
   const animation = settings.animation || {};
   
-  const containerStyle: React.CSSProperties = {
-    backgroundColor: appearance.background || undefined,
-  };
+  // For branch_choice, use its background color; otherwise use appearance settings
+  const screenBackgroundColor = currentBlock?.type === 'branch_choice' 
+    ? currentBlock.content.backgroundColor 
+    : (appearance.background || 'hsl(var(--background))');
 
   const containerClass = `w-full ${paddingClasses[appearance.padding || 'normal']} ${alignmentClasses[appearance.alignment || 'center']}`;
   
@@ -60,7 +61,12 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
         </div>
         
         {/* Phone Screen */}
-        <div className="bg-background h-[500px] relative">
+        <div 
+          className="h-[500px] relative"
+          style={{
+            backgroundColor: screenBackgroundColor,
+          }}
+        >
           {blocks.length === 0 ? (
             <div className="flex items-center justify-center h-full p-6 text-center">
               <p className="text-sm text-muted-foreground">
@@ -85,7 +91,7 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
               </div>
               
               {/* Current Block Display */}
-              <div className={`h-full pt-8 flex ${containerClass}`} style={containerStyle}>
+              <div className={`h-full pt-8 flex ${containerClass}`}>
                 {currentBlock && (
                   <motion.div 
                     className={`w-full ${
@@ -173,10 +179,7 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                     )}
                     
                     {currentBlock.type === "branch_choice" && (
-                      <div 
-                        className="space-y-4 p-6 rounded-2xl h-full flex flex-col justify-center" 
-                        style={{ backgroundColor: currentBlock.content.backgroundColor || "#f3f4f6" }}
-                      >
+                      <div className="space-y-4 p-6 h-full flex flex-col justify-center">
                         {currentBlock.content.media?.url && (
                           <img
                             src={currentBlock.content.media.url}
