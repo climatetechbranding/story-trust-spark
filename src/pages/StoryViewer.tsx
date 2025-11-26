@@ -8,161 +8,97 @@ import { supabase } from "@/integrations/supabase/client";
 import { BrandThemeProvider, useBrandTheme } from "@/contexts/BrandThemeContext";
 import { BrandTheme } from "@/types/brand";
 import { brandSettingsToTheme } from "@/hooks/useBrandSettings";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface StoryNode {
+interface ContentBlock {
   id: string;
-  type: "video" | "text" | "image" | "question" | "button" | "map";
+  type: "video" | "text" | "image" | "map" | "branch_choice";
   content: any;
-  greenClaim?: boolean;
-  substantiation?: {
-    title: string;
-    summary: string;
-    whyItMatters: string;
-    evidence: string;
-    categories?: string[];
-    certifications?: { name: string; logo: string; verificationUrl: string }[];
-    documents?: { name: string; type: string; url: string; updatedAt: string }[];
-    regulatoryInfo?: { text: string; url: string };
-  };
-  options?: { label: string; nextNodeId: string }[];
+  settings?: any;
 }
 
-const StoryViewerContent = () => {
-  const [currentPath, setCurrentPath] = useState<string[]>(["1"]);
+interface StoryBranch {
+  id: string;
+  name: string;
+  icon?: string;
+  blocks: ContentBlock[];
+}
+
+interface Story {
+  id: string;
+  name: string;
+  content: {
+    rootBranchId: string;
+    branches: StoryBranch[];
+  };
+  custom_branding?: any;
+  use_custom_brand?: boolean;
+}
+
+interface NavigationState {
+  branchId: string;
+  blockIndex: number;
+}
+
+const StoryViewerContent = ({ story }: { story: Story }) => {
+  const [currentBranchId, setCurrentBranchId] = useState<string>(story.content.rootBranchId || "root");
+  const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
+  const [navigationStack, setNavigationStack] = useState<NavigationState[]>([]);
   const [showLegal, setShowLegal] = useState(false);
   const [direction, setDirection] = useState(0);
   const [videoPlaying, setVideoPlaying] = useState(true);
   const [videoMuted, setVideoMuted] = useState(false);
   const { theme } = useBrandTheme();
 
-  // Sample story structure with branching
-  const storyNodes: Record<string, StoryNode> = {
-    "1": {
-      id: "1",
-      type: "video",
-      content: {
-        videoUrl: "https://videos.unsplash.com/photo-1469854523086-cc02fe5d8800",
-        caption: "Zero Carbon Lounge Chair by Lokaal Living",
-        duration: 15,
-      },
-      greenClaim: true,
-      substantiation: {
-        title: "Carbon Neutral Certification",
-        summary: "Our Zero Chair achieves carbon neutrality through recycled materials, renewable energy manufacturing, and verified carbon offsets.",
-        whyItMatters: "Every piece of furniture we create removes carbon from the atmosphere instead of adding to it, helping combat climate change one chair at a time.",
-        evidence: "Certified by ClimatePartner (ID: 13850-2203-1001). Full lifecycle assessment available.",
-        categories: ["Carbon Neutral", "Sustainable Manufacturing"],
-        certifications: [
-          { name: "Carbon Neutral", logo: "🌍", verificationUrl: "https://example.com/carbon-cert" },
-          { name: "B Corp", logo: "🏢", verificationUrl: "https://example.com/bcorp" },
-          { name: "FSC Certified", logo: "🌲", verificationUrl: "https://example.com/fsc" },
-        ],
-        documents: [
-          { name: "Full Lifecycle Assessment", type: "PDF", url: "#", updatedAt: "2024-10-15" },
-          { name: "Carbon Offset Verification", type: "PDF", url: "#", updatedAt: "2024-11-01" },
-        ],
-        regulatoryInfo: {
-          text: "Complies with EU Green Claims Directive",
-          url: "https://docs.lovable.dev/features/security",
-        },
-      },
-    },
-    "2": {
-      id: "2",
-      type: "text",
-      content: {
-        title: "Choose Your Journey",
-        body: "Discover what matters most to you about sustainable furniture.",
-      },
-    },
-    "3": {
-      id: "3",
-      type: "button",
-      content: {
-        question: "What interests you most?",
-        options: [
-          { label: "♻️ Materials Story", nextNodeId: "4" },
-          { label: "🏭 Manufacturing Process", nextNodeId: "5" },
-          { label: "🌍 Environmental Impact", nextNodeId: "6" },
-        ],
-      },
-    },
-    "4": {
-      id: "4",
-      type: "text",
-      content: {
-        title: "Circular Materials",
-        body: "Made from 98% recycled Dutch oak sourced from old railway tracks and decommissioned canal houses. The bioplastic seat is derived from sugar beets grown within 30 kilometers of our Amsterdam workshop.",
-        icon: "♻️",
-      },
-      greenClaim: true,
-      substantiation: {
-        title: "Recycled Materials Verification",
-        summary: "98% of wood materials are certified post-consumer recycled content from verified Dutch sources.",
-        whyItMatters: "Using recycled materials saves old-growth forests and reduces the energy needed to process raw materials by up to 60%.",
-        evidence: "Material traceability documentation and third-party verification by ISCC PLUS certification.",
-        categories: ["Recycling", "Circular Economy"],
-        certifications: [
-          { name: "ISCC PLUS", logo: "♻️", verificationUrl: "https://example.com/iscc" },
-          { name: "FSC Recycled", logo: "🌲", verificationUrl: "https://example.com/fsc-recycled" },
-        ],
-        documents: [
-          { name: "Material Traceability Report", type: "PDF", url: "#", updatedAt: "2024-09-20" },
-          { name: "ISCC Certification", type: "PDF", url: "#", updatedAt: "2024-08-10" },
-        ],
-        regulatoryInfo: {
-          text: "Verified under ISO 14021 Environmental Labels",
-          url: "https://docs.lovable.dev/features/security",
-        },
-      },
-    },
-    "5": {
-      id: "5",
-      type: "map",
-      content: {
-        title: "Solar-Powered Workshop",
-        location: { lat: 52.3676, lng: 4.9041, name: "Amsterdam, Netherlands" },
-        description: "Our workshop runs on 100% solar energy, using CNC technology to minimize waste.",
-      },
-    },
-    "6": {
-      id: "6",
-      type: "question",
-      content: {
-        question: "Did you know this chair saves...",
-        stats: [
-          { label: "CO₂ Offset", value: "100%", icon: "🌍" },
-          { label: "Recycled Materials", value: "98%", icon: "♻️" },
-          { label: "Local Sourcing", value: "30km", icon: "📍" },
-        ],
-      },
-    },
-  };
-
-  const currentNodeId = currentPath[currentPath.length - 1];
-  const currentNode = storyNodes[currentNodeId];
+  const branches = story.content.branches || [];
+  const currentBranch = branches.find((b) => b.id === currentBranchId);
+  const currentBlock = currentBranch?.blocks[currentBlockIndex];
 
   const handleSwipe = (event: any, info: PanInfo) => {
     const swipeThreshold = 50;
     
-    if (info.offset.y < -swipeThreshold && !showLegal && currentNode?.greenClaim) {
-      // Swipe up - show legal
+    if (info.offset.y < -swipeThreshold && !showLegal && currentBlock?.content.greenClaim) {
       setShowLegal(true);
     } else if (info.offset.y > swipeThreshold && showLegal) {
-      // Swipe down - hide legal
       setShowLegal(false);
+    } else if (info.offset.x < -swipeThreshold && !showLegal) {
+      handleNext();
+    } else if (info.offset.x > swipeThreshold && !showLegal) {
+      handlePrevious();
     }
   };
 
-  const handleNavigate = (nextNodeId: string) => {
-    setCurrentPath([...currentPath, nextNodeId]);
+  const handleNext = () => {
+    if (!currentBranch) return;
+    if (currentBlockIndex < currentBranch.blocks.length - 1) {
+      setCurrentBlockIndex(currentBlockIndex + 1);
+      setDirection(1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentBlockIndex > 0) {
+      setCurrentBlockIndex(currentBlockIndex - 1);
+      setDirection(-1);
+    } else if (navigationStack.length > 0) {
+      handleBack();
+    }
+  };
+
+  const handleBranchNavigation = (targetBranchId: string) => {
+    setNavigationStack([...navigationStack, { branchId: currentBranchId, blockIndex: currentBlockIndex }]);
+    setCurrentBranchId(targetBranchId);
+    setCurrentBlockIndex(0);
     setDirection(1);
     setShowLegal(false);
   };
 
   const handleBack = () => {
-    if (currentPath.length > 1) {
-      setCurrentPath(currentPath.slice(0, -1));
+    if (navigationStack.length > 0) {
+      const previous = navigationStack[navigationStack.length - 1];
+      setCurrentBranchId(previous.branchId);
+      setCurrentBlockIndex(previous.blockIndex);
+      setNavigationStack(navigationStack.slice(0, -1));
       setDirection(-1);
       setShowLegal(false);
     }
@@ -183,16 +119,18 @@ const StoryViewerContent = () => {
     }),
   };
 
-  if (!currentNode) {
+  if (!currentBlock) {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-background">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-2">Story not found</h2>
-          <p className="text-muted-foreground">This story doesn't exist or has been removed.</p>
+          <h2 className="text-2xl font-bold mb-2">Story content not available</h2>
+          <p className="text-muted-foreground">This story has no content blocks.</p>
         </div>
       </div>
     );
   }
+
+  const totalBlocks = currentBranch?.blocks.length || 0;
 
   return (
     <motion.div 
@@ -204,21 +142,21 @@ const StoryViewerContent = () => {
     >
       {/* Progress Indicators */}
       <div className="absolute top-4 left-4 right-4 flex gap-2 z-30">
-        {Object.keys(storyNodes).slice(0, 6).map((_, i) => (
+        {Array.from({ length: totalBlocks }).map((_, i) => (
           <div
             key={i}
             className="h-1 flex-1 rounded-full transition-all"
             style={{
-              backgroundColor: i < currentPath.length 
-                ? (theme ? `hsl(${theme.primaryColor})` : 'white')
-                : (theme ? `hsl(${theme.primaryColor} / 0.3)` : 'rgba(255, 255, 255, 0.3)'),
+              backgroundColor: i <= currentBlockIndex
+                ? (theme ? `hsl(${theme.primaryColor})` : 'hsl(var(--primary))')
+                : (theme ? `hsl(${theme.primaryColor} / 0.3)` : 'hsl(var(--primary) / 0.3)'),
             }}
           />
         ))}
       </div>
 
       {/* Back Button */}
-      {currentPath.length > 1 && (
+      {navigationStack.length > 0 && (
         <Button
           variant="ghost"
           size="icon"
@@ -232,7 +170,7 @@ const StoryViewerContent = () => {
       {/* Main Content */}
       <AnimatePresence mode="wait" custom={direction}>
         <motion.div
-          key={currentNodeId}
+          key={`${currentBranchId}-${currentBlockIndex}`}
           custom={direction}
           variants={slideVariants}
           initial="enter"
@@ -240,27 +178,32 @@ const StoryViewerContent = () => {
           exit="exit"
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="h-full w-full"
+          style={{
+            backgroundColor: currentBlock.settings?.appearance?.background || 'transparent',
+          }}
         >
-          {/* Video Node */}
-          {currentNode.type === "video" && (
+          {/* Video Block */}
+          {currentBlock.type === "video" && (
             <div className="h-full relative bg-black">
               <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40" />
               <video
                 className="h-full w-full object-cover"
-                autoPlay={currentNode.content.autoplay !== false}
-                loop={currentNode.content.loop}
-                muted={videoMuted || currentNode.content.muted}
+                autoPlay={currentBlock.content.autoplay !== false}
+                loop={currentBlock.content.loop}
+                muted={videoMuted || currentBlock.content.muted}
                 playsInline
               >
-                <source src={currentNode.content.videoUrl || currentNode.content.url} type="video/mp4" />
+                <source src={currentBlock.content.url} type="video/mp4" />
               </video>
               
               <div className="absolute bottom-20 left-0 right-0 p-6 text-white">
-                <h1 className="text-3xl font-bold mb-2">{currentNode.content.caption || currentNode.content.title}</h1>
-                {currentNode.content.description && (
-                  <p className="text-sm opacity-90">{currentNode.content.description}</p>
+                {currentBlock.content.title && (
+                  <h1 className="text-3xl font-bold mb-2">{currentBlock.content.title}</h1>
                 )}
-                {currentNode.greenClaim && (
+                {currentBlock.content.description && (
+                  <p className="text-sm opacity-90">{currentBlock.content.description}</p>
+                )}
+                {currentBlock.content.greenClaim && (
                   <div className="flex items-center gap-2 text-sm opacity-75 mt-4">
                     <ChevronUp className="h-4 w-4 animate-bounce" />
                     <span>Swipe up for proof</span>
@@ -289,25 +232,24 @@ const StoryViewerContent = () => {
             </div>
           )}
 
-          {/* Text Node */}
-          {currentNode.type === "text" && (
+          {/* Text Block */}
+          {currentBlock.type === "text" && (
             <div className="h-full flex items-center justify-center p-8">
               <div className="max-w-md text-center space-y-6">
-                {currentNode.content.icon && (
-                  <div className="text-7xl mb-6">{currentNode.content.icon}</div>
+                {currentBlock.content.title && (
+                  <h2 className="text-4xl font-bold leading-tight">{currentBlock.content.title}</h2>
                 )}
-                <h2 className="text-4xl font-bold leading-tight">{currentNode.content.title}</h2>
-                {currentNode.content.html ? (
+                {currentBlock.content.html ? (
                   <div 
                     className="text-lg leading-relaxed prose prose-lg max-w-none"
-                    dangerouslySetInnerHTML={{ __html: currentNode.content.html }}
+                    dangerouslySetInnerHTML={{ __html: currentBlock.content.html }}
                   />
-                ) : (
+                ) : currentBlock.content.text && (
                   <p className="text-lg text-muted-foreground leading-relaxed">
-                    {currentNode.content.body}
+                    {currentBlock.content.text}
                   </p>
                 )}
-                {currentNode.greenClaim && (
+                {currentBlock.content.greenClaim && (
                   <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6">
                     <ChevronUp className="h-4 w-4 animate-bounce" />
                     <span>Swipe up for verification</span>
@@ -317,67 +259,79 @@ const StoryViewerContent = () => {
             </div>
           )}
 
-          {/* Button/Options Node */}
-          {currentNode.type === "button" && (
-            <div className="h-full flex items-center justify-center p-8">
-              <div className="max-w-md w-full space-y-6">
-                <h2 className="text-3xl font-bold text-center mb-8">
-                  {currentNode.content.question}
-                </h2>
-                <div className="space-y-4">
-                  {currentNode.content.options.map((option: any, i: number) => (
-                    <motion.button
-                      key={i}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleNavigate(option.nextNodeId)}
-                      className="w-full p-5 bg-card hover:bg-card/80 rounded-xl text-left font-medium text-lg shadow-lg transition-colors"
-                    >
-                      {option.label}
-                    </motion.button>
-                  ))}
+          {/* Image Block */}
+          {currentBlock.type === "image" && (
+            <div className="h-full relative">
+              <img 
+                src={currentBlock.content.url} 
+                alt={currentBlock.content.alt || ""} 
+                className="h-full w-full object-cover"
+              />
+              {currentBlock.content.caption && (
+                <div className="absolute bottom-20 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+                  <p className="text-white text-center">{currentBlock.content.caption}</p>
                 </div>
-              </div>
+              )}
             </div>
           )}
 
-          {/* Question/Stats Node */}
-          {currentNode.type === "question" && (
-            <div className="h-full flex items-center justify-center p-8 bg-gradient-to-br from-primary/10 to-secondary/10">
-              <div className="max-w-md w-full space-y-8">
-                <h2 className="text-3xl font-bold text-center">{currentNode.content.question}</h2>
-                <div className="space-y-4">
-                  {currentNode.content.stats.map((stat: any, i: number) => (
-                    <motion.div
-                      key={i}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: i * 0.2 }}
-                      className="bg-card p-6 rounded-xl shadow-lg"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="text-5xl">{stat.icon}</div>
-                        <div className="flex-1">
-                          <div className="text-4xl font-bold text-primary">{stat.value}</div>
-                          <div className="text-sm text-muted-foreground">{stat.label}</div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Map Node */}
-          {currentNode.type === "map" && (
+          {/* Map Block */}
+          {currentBlock.type === "map" && (
             <div className="h-full relative">
               <div className="h-full bg-muted/50 flex items-center justify-center">
                 <div className="text-center p-6">
                   <div className="text-6xl mb-4">📍</div>
-                  <h2 className="text-2xl font-bold mb-2">{currentNode.content.title}</h2>
-                  <p className="text-muted-foreground mb-4">{currentNode.content.location.name}</p>
-                  <p className="text-sm">{currentNode.content.description}</p>
+                  <h2 className="text-2xl font-bold mb-2">{currentBlock.content.location}</h2>
+                  {currentBlock.content.latitude && currentBlock.content.longitude && (
+                    <p className="text-muted-foreground text-sm">
+                      {currentBlock.content.latitude}, {currentBlock.content.longitude}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Branch Choice Block */}
+          {currentBlock.type === "branch_choice" && (
+            <div 
+              className="h-full flex items-center justify-center p-8"
+              style={{
+                backgroundColor: currentBlock.content.background || 'transparent',
+              }}
+            >
+              <div className="max-w-md w-full space-y-6">
+                {currentBlock.content.media && (
+                  <img 
+                    src={currentBlock.content.media} 
+                    alt=""
+                    className="w-full h-48 object-cover rounded-lg mb-4"
+                  />
+                )}
+                {currentBlock.content.text && (
+                  <h2 className="text-3xl font-bold text-center mb-8">
+                    {currentBlock.content.text}
+                  </h2>
+                )}
+                <div className="space-y-4">
+                  {currentBlock.content.options?.map((option: any, i: number) => (
+                    <motion.button
+                      key={i}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => handleBranchNavigation(option.targetBranchId)}
+                      className="w-full p-5 bg-card hover:bg-card/80 rounded-xl text-left font-medium text-lg shadow-lg transition-colors flex items-center gap-3"
+                      style={{
+                        backgroundColor: theme ? `hsl(${theme.primaryColor} / 0.1)` : undefined,
+                        borderColor: theme ? `hsl(${theme.primaryColor})` : undefined,
+                      }}
+                    >
+                      {option.media && (
+                        <img src={option.media} alt="" className="w-12 h-12 object-cover rounded" />
+                      )}
+                      <span>{option.text}</span>
+                    </motion.button>
+                  ))}
                 </div>
               </div>
             </div>
@@ -386,7 +340,7 @@ const StoryViewerContent = () => {
       </AnimatePresence>
 
       {/* Legal/Substantiation Drawer */}
-      {currentNode.substantiation && (
+      {currentBlock.content.substantiation && (
         <motion.div
           initial={false}
           animate={{
@@ -397,12 +351,10 @@ const StoryViewerContent = () => {
           style={{ height: "85vh" }}
           onClick={() => !showLegal && setShowLegal(true)}
         >
-          {/* Pull Handle */}
           <div className="flex justify-center py-3 cursor-pointer" onClick={() => showLegal && setShowLegal(false)}>
             <div className="w-12 h-1.5 bg-muted-foreground/30 rounded-full" />
           </div>
 
-          {/* Close Button (only visible when open) */}
           {showLegal && (
             <Button
               variant="ghost"
@@ -417,126 +369,22 @@ const StoryViewerContent = () => {
             </Button>
           )}
 
-          {/* Drawer Content */}
           <div className="px-6 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 60px)" }}>
-            <div className="space-y-6" style={{ borderTopColor: theme ? `hsl(${theme.primaryColor})` : undefined }}>
-              {/* Claim Title & Categories */}
+            <div className="space-y-6">
               <div>
-                <h3 className="text-2xl font-bold mb-3">{currentNode.substantiation.title}</h3>
-                {currentNode.substantiation.categories && (
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {currentNode.substantiation.categories.map((category, i) => (
-                      <span
-                        key={i}
-                        className="px-3 py-1 bg-secondary/10 text-secondary rounded-full text-xs font-medium"
-                      >
-                        {category}
-                      </span>
-                    ))}
-                  </div>
-                )}
+                <h3 className="text-2xl font-bold mb-3">{currentBlock.content.substantiation.title}</h3>
               </div>
 
-              {/* Claim Summary */}
               <div className="bg-card rounded-lg p-4 border">
                 <p className="text-sm leading-relaxed text-foreground">
-                  {currentNode.substantiation.summary}
+                  {currentBlock.content.substantiation.summary}
                 </p>
               </div>
 
-              {/* Why This Matters */}
-              <div>
-                <h4 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-                  Why This Matters
-                </h4>
-                <p className="text-sm leading-relaxed">
-                  {currentNode.substantiation.whyItMatters}
-                </p>
-              </div>
-
-              {/* Evidence */}
-              <div>
-                <h4 className="font-semibold mb-2 text-sm uppercase tracking-wide text-muted-foreground">
-                  Evidence
-                </h4>
-                <p className="text-sm leading-relaxed text-muted-foreground">
-                  {currentNode.substantiation.evidence}
-                </p>
-              </div>
-
-              {/* Evidence Documents */}
-              {currentNode.substantiation.documents && currentNode.substantiation.documents.length > 0 && (
+              {currentBlock.content.substantiation.evidence && (
                 <div>
-                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
-                    Supporting Documents
-                  </h4>
-                  <div className="space-y-2">
-                    {currentNode.substantiation.documents.map((doc, i) => (
-                      <a
-                        key={i}
-                        href={doc.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center justify-between p-3 bg-card rounded-lg border hover:border-primary transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 bg-muted rounded-lg flex items-center justify-center text-lg">
-                            📄
-                          </div>
-                          <div>
-                            <div className="font-medium text-sm">{doc.name}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {doc.type} • Updated {doc.updatedAt}
-                            </div>
-                          </div>
-                        </div>
-                        <ChevronUp className="h-4 w-4 rotate-90 text-muted-foreground" />
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Certifications & Badges */}
-              {currentNode.substantiation.certifications && currentNode.substantiation.certifications.length > 0 && (
-                <div>
-                  <h4 className="font-semibold mb-3 text-sm uppercase tracking-wide text-muted-foreground">
-                    Certifications
-                  </h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    {currentNode.substantiation.certifications.map((cert, i) => (
-                      <a
-                        key={i}
-                        href={cert.verificationUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex flex-col items-center justify-center p-4 bg-card rounded-lg border hover:border-primary transition-colors text-center"
-                      >
-                        <div className="text-3xl mb-2">{cert.logo}</div>
-                        <div className="text-xs font-medium">{cert.name}</div>
-                      </a>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Regulatory Reference */}
-              {currentNode.substantiation.regulatoryInfo && (
-                <div className="bg-muted/50 rounded-lg p-4 border border-muted">
-                  <div className="flex items-start gap-2">
-                    <div className="text-lg">⚖️</div>
-                    <div className="flex-1">
-                      <p className="text-xs text-muted-foreground mb-1">Regulatory Compliance</p>
-                      <a
-                        href={currentNode.substantiation.regulatoryInfo.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-medium hover:underline"
-                      >
-                        {currentNode.substantiation.regulatoryInfo.text}
-                      </a>
-                    </div>
-                  </div>
+                  <h4 className="font-semibold mb-2">Evidence</h4>
+                  <p className="text-sm text-muted-foreground">{currentBlock.content.substantiation.evidence}</p>
                 </div>
               )}
             </div>
@@ -548,54 +396,93 @@ const StoryViewerContent = () => {
 };
 
 const StoryViewer = () => {
-  const { id } = useParams();
+  const { id, shortUrl } = useParams();
 
-  // Fetch story data (if we had real stories in DB)
-  const { data: story } = useQuery({
-    queryKey: ["story", id],
+  // Fetch story data
+  const { data: story, isLoading, error } = useQuery({
+    queryKey: ["storyView", id, shortUrl],
     queryFn: async () => {
-      if (!id || id === "preview") return null;
-      
-      const { data, error } = await supabase
-        .from("stories")
-        .select("*")
-        .eq("id", id)
-        .single();
-      
+      let query = supabase.from("stories").select("*");
+
+      if (shortUrl) {
+        query = query.eq("short_url", shortUrl);
+      } else if (id && id !== "preview") {
+        query = query.eq("id", id);
+      } else {
+        return null;
+      }
+
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
       return data;
     },
-    enabled: !!id && id !== "preview",
+    enabled: !!(id || shortUrl),
   });
 
   // Fetch default brand settings
   const { data: defaultBrandSettings } = useQuery({
-    queryKey: ["brandSettings", story?.user_id],
+    queryKey: ["brandSettings", "00000000-0000-0000-0000-000000000000"],
     queryFn: async () => {
-      const userId = story?.user_id || "00000000-0000-0000-0000-000000000000";
-      
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("brand_settings")
         .select("*")
-        .eq("user_id", userId)
-        .single();
-      
-      if (error && error.code !== "PGRST116") throw error;
+        .eq("user_id", "00000000-0000-0000-0000-000000000000")
+        .maybeSingle();
       return data;
     },
-    enabled: !!story?.user_id || id === "preview",
   });
 
-  // Determine theme: use story's custom branding or user's default
+  // Track analytics on story load
+  useEffect(() => {
+    if (story && (shortUrl || id)) {
+      const trackView = async () => {
+        const hasVisited = localStorage.getItem(`visited_${story.id}`);
+        
+        await supabase.from('story_analytics').insert({
+          story_id: story.id,
+          device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+          referrer: document.referrer || null,
+          is_unique_visitor: !hasVisited,
+        });
+        
+        if (!hasVisited) {
+          localStorage.setItem(`visited_${story.id}`, 'true');
+        }
+      };
+      
+      trackView();
+    }
+  }, [story, shortUrl, id]);
+
+  // Determine theme
   const theme: BrandTheme | null = story?.use_custom_brand && story?.custom_branding
     ? (story.custom_branding as unknown as BrandTheme)
     : defaultBrandSettings
-      ? brandSettingsToTheme(defaultBrandSettings)
-      : null;
+    ? brandSettingsToTheme(defaultBrandSettings)
+    : null;
+
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <Skeleton className="h-12 w-12 rounded-full" />
+      </div>
+    );
+  }
+
+  if (error || !story) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center bg-background">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold mb-2">Story not found</h2>
+          <p className="text-muted-foreground">This story doesn't exist or has been removed.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BrandThemeProvider theme={theme}>
-      <StoryViewerContent />
+      <StoryViewerContent story={story as unknown as Story} />
     </BrandThemeProvider>
   );
 };
