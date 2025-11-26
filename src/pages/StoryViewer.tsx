@@ -41,7 +41,7 @@ interface NavigationState {
   blockIndex: number;
 }
 
-const StoryViewerContent = ({ story }: { story: Story }) => {
+const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPreview?: boolean }) => {
   const [currentBranchId, setCurrentBranchId] = useState<string>(story.content.rootBranchId || "root");
   const [currentBlockIndex, setCurrentBlockIndex] = useState(0);
   const [navigationStack, setNavigationStack] = useState<NavigationState[]>([]);
@@ -122,7 +122,7 @@ const StoryViewerContent = ({ story }: { story: Story }) => {
 
   if (!currentBlock) {
     return (
-      <div className="h-screen w-full flex items-center justify-center bg-background">
+      <div className={`${isPreview ? 'h-full' : 'h-screen'} w-full flex items-center justify-center bg-background`}>
         <div className="text-center">
           <h2 className="text-2xl font-bold mb-2">Story content not available</h2>
           <p className="text-muted-foreground">This story has no content blocks.</p>
@@ -135,7 +135,7 @@ const StoryViewerContent = ({ story }: { story: Story }) => {
 
   return (
     <motion.div 
-      className="h-screen w-full bg-background relative overflow-hidden"
+      className={`${isPreview ? 'h-full' : 'h-screen'} w-full bg-background relative overflow-hidden`}
       drag="y"
       dragConstraints={{ top: 0, bottom: 0 }}
       dragElastic={0.2}
@@ -559,7 +559,7 @@ const StoryViewer = () => {
                 
                 {/* Story Content */}
                 <div className="w-full h-full overflow-hidden">
-                  <StoryViewerContent story={story as unknown as Story} />
+                  <StoryViewerContent story={story as unknown as Story} isPreview={true} />
                 </div>
               </div>
             </div>
