@@ -295,41 +295,75 @@ const StoryViewerContent = ({ story }: { story: Story }) => {
           {/* Branch Choice Block */}
           {currentBlock.type === "branch_choice" && (
             <div 
-              className="h-full flex items-center justify-center p-8"
+              className="h-full relative flex flex-col items-center justify-center p-6"
               style={{
-                backgroundColor: currentBlock.content.background || 'transparent',
+                backgroundColor: currentBlock.content.background || 'hsl(var(--background))',
               }}
             >
-              <div className="max-w-md w-full space-y-6">
+              {/* Background Media */}
+              {currentBlock.content.backgroundMedia && (
+                <div className="absolute inset-0 opacity-30">
+                  {currentBlock.content.backgroundMedia.includes('video') ? (
+                    <video 
+                      className="w-full h-full object-cover"
+                      autoPlay
+                      loop
+                      muted
+                      playsInline
+                    >
+                      <source src={currentBlock.content.backgroundMedia} type="video/mp4" />
+                    </video>
+                  ) : (
+                    <img 
+                      src={currentBlock.content.backgroundMedia} 
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  )}
+                </div>
+              )}
+
+              <div className="relative z-10 max-w-sm w-full space-y-4">
+                {/* Top Media */}
                 {currentBlock.content.media && (
-                  <img 
-                    src={currentBlock.content.media} 
-                    alt=""
-                    className="w-full h-48 object-cover rounded-lg mb-4"
-                  />
+                  <div className="bg-white rounded-2xl p-4 shadow-lg">
+                    <img 
+                      src={currentBlock.content.media} 
+                      alt=""
+                      className="w-full h-32 object-contain"
+                    />
+                  </div>
                 )}
+                
+                {/* Title in speech bubble */}
                 {currentBlock.content.text && (
-                  <h2 className="text-3xl font-bold text-center mb-8">
-                    {currentBlock.content.text}
-                  </h2>
+                  <div className="bg-white rounded-2xl p-4 shadow-lg relative">
+                    <div className="absolute -bottom-2 left-8 w-4 h-4 bg-white transform rotate-45" />
+                    <h2 className="text-lg font-bold text-gray-900 leading-snug">
+                      {currentBlock.content.text}
+                    </h2>
+                  </div>
                 )}
-                <div className="space-y-4">
+                
+                {/* Options as stacked buttons */}
+                <div className="space-y-3 pt-2">
                   {currentBlock.content.options?.map((option: any, i: number) => (
                     <motion.button
                       key={i}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                       onClick={() => handleBranchNavigation(option.targetBranchId)}
-                      className="w-full p-5 bg-card hover:bg-card/80 rounded-xl text-left font-medium text-lg shadow-lg transition-colors flex items-center gap-3"
-                      style={{
-                        backgroundColor: theme ? `hsl(${theme.primaryColor} / 0.1)` : undefined,
-                        borderColor: theme ? `hsl(${theme.primaryColor})` : undefined,
-                      }}
+                      className="w-full bg-white hover:bg-gray-50 rounded-2xl shadow-lg transition-all flex items-center gap-3 p-4"
                     >
                       {option.media && (
-                        <img src={option.media} alt="" className="w-12 h-12 object-cover rounded" />
+                        <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center">
+                          <img src={option.media} alt="" className="w-full h-full object-cover" />
+                        </div>
                       )}
-                      <span>{option.text}</span>
+                      <span className="text-gray-900 font-medium text-base leading-tight text-left flex-1">
+                        {option.text}
+                      </span>
+                      <span className="text-primary text-xl">→</span>
                     </motion.button>
                   ))}
                 </div>

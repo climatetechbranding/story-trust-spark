@@ -392,40 +392,59 @@ export const ContentBlockCard = ({
                   />
                 </div>
 
-                {/* Media Section */}
+                {/* Top Media Section */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Media</label>
-                  <div className="flex items-center gap-3">
-                    {block.content.media?.url ? (
+                  <label className="text-sm font-medium mb-2 block">Top Media (Optional)</label>
+                  <Input
+                    type="text"
+                    placeholder="Image URL"
+                    value={block.content.media?.url || ""}
+                    onChange={(e) => onUpdate({ ...block.content, media: { url: e.target.value } })}
+                    className="text-xs"
+                  />
+                </div>
+
+                {/* Background Media Section */}
+                <div>
+                  <label className="text-sm font-medium mb-2 block">Background Media (Image/Video)</label>
+                  <div className="flex items-start gap-2">
+                    {block.content.backgroundMedia ? (
                       <div className="w-20 h-20 rounded-lg overflow-hidden border">
-                        <img src={block.content.media.url} alt="" className="w-full h-full object-cover" />
+                        {block.content.backgroundMedia.includes('video') ? (
+                          <video src={block.content.backgroundMedia} className="w-full h-full object-cover" />
+                        ) : (
+                          <img src={block.content.backgroundMedia} alt="" className="w-full h-full object-cover" />
+                        )}
                       </div>
                     ) : (
                       <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center">
                         <ImageIcon className="h-6 w-6 text-muted-foreground" />
                       </div>
                     )}
-                    <div className="flex flex-col gap-2">
+                    <div className="flex flex-col gap-2 flex-1">
                       <Input
                         type="text"
-                        placeholder="Image URL"
-                        value={block.content.media?.url || ""}
-                        onChange={(e) => onUpdate({ ...block.content, media: { url: e.target.value } })}
+                        placeholder="Image or Video URL"
+                        value={block.content.backgroundMedia || ""}
+                        onChange={(e) => onUpdate({ ...block.content, backgroundMedia: e.target.value })}
                         className="text-xs"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Text Section */}
+                {/* Title Text Section */}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Text</label>
-                  <Textarea
+                  <label className="text-sm font-medium mb-2 block">Title (Keep it short - max 6 words)</label>
+                  <Input
                     value={block.content.text || ""}
                     onChange={(e) => onUpdate({ ...block.content, text: e.target.value })}
-                    placeholder="Describe the branching choice..."
-                    rows={3}
+                    placeholder="Welcome to our story..."
+                    maxLength={50}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {block.content.text?.split(' ').length || 0} words
+                  </p>
                 </div>
 
                 {/* Branching Options */}
@@ -439,9 +458,9 @@ export const ContentBlockCard = ({
                           
                           {/* Option Media Thumbnail */}
                           <div className="flex-shrink-0">
-                            {option.media?.url ? (
+                            {option.media ? (
                               <div className="w-10 h-10 rounded overflow-hidden border">
-                                <img src={option.media.url} alt="" className="w-full h-full object-cover" />
+                                <img src={option.media} alt="" className="w-full h-full object-cover" />
                               </div>
                             ) : (
                               <div className="w-10 h-10 rounded border-2 border-dashed flex items-center justify-center">
@@ -450,18 +469,18 @@ export const ContentBlockCard = ({
                             )}
                           </div>
                           
-                          {/* Option Text */}
+                          {/* Option Text & Media */}
                           <div className="flex-1 space-y-2">
                             <Input
                               value={option.text}
                               onChange={(e) => updateOption(option.id, { text: e.target.value })}
-                              placeholder="Option text"
+                              placeholder="Option text (keep short)"
                               className="text-sm"
                             />
                             <Input
-                              value={option.media?.url || ""}
-                              onChange={(e) => updateOption(option.id, { media: { url: e.target.value } })}
-                              placeholder="Option image URL"
+                              value={option.media || ""}
+                              onChange={(e) => updateOption(option.id, { media: e.target.value })}
+                              placeholder="Icon/Image URL"
                               className="text-xs"
                             />
                           </div>
