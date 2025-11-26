@@ -1,13 +1,17 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Plus, QrCode, BarChart3, Settings, Loader2 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useStories } from "@/hooks/useStories";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QRCodeDialog } from "@/components/QRCodeDialog";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const { data: stories, isLoading } = useStories();
+  const [qrDialogOpen, setQrDialogOpen] = useState(false);
+  const [selectedStory, setSelectedStory] = useState<any>(null);
 
   return (
     <div className="min-h-screen bg-background">
@@ -44,7 +48,7 @@ const Dashboard = () => {
             </p>
           </Card>
 
-          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer">
+          <Card className="p-6 hover:shadow-lg transition-shadow cursor-pointer" onClick={() => navigate("/analytics")}>
             <BarChart3 className="h-10 w-10 text-secondary mb-3" />
             <h3 className="font-semibold text-lg mb-2">Analytics</h3>
             <p className="text-sm text-muted-foreground">
@@ -107,7 +111,8 @@ const Dashboard = () => {
                         size="sm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          // QR code generation will be implemented later
+                          setSelectedStory(story);
+                          setQrDialogOpen(true);
                         }}
                       >
                         <QrCode className="h-4 w-4" />
@@ -128,6 +133,15 @@ const Dashboard = () => {
           </div>
         </Card>
       </main>
+
+      {/* QR Code Dialog */}
+      {selectedStory && (
+        <QRCodeDialog
+          open={qrDialogOpen}
+          onOpenChange={setQrDialogOpen}
+          story={selectedStory}
+        />
+      )}
     </div>
   );
 };

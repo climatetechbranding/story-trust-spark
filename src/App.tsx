@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import StoryBuilder from "./pages/StoryBuilder";
 import StoryViewer from "./pages/StoryViewer";
 import Settings from "./pages/Settings";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,9 +25,11 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/settings" element={<Settings />} />
+        <Route path="/analytics" element={<Analytics />} />
         <Route path="/story/:id/edit" element={<StoryBuilder />} />
         <Route path="/story/:id" element={<StoryViewer />} />
         <Route path="/story/preview" element={<StoryViewer />} />
+        <Route path="/s/:shortUrl" element={<StoryViewer />} />
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
