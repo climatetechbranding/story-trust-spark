@@ -155,7 +155,7 @@ export const ContentBlockCard = ({
   const uploadOptionMedia = useCallback(async (file: File, optionId: string) => {
     const url = await uploadMedia(file);
     if (url) {
-      updateOption(optionId, { media: url });
+      updateOption(optionId, { media: { url } });
     }
   }, []);
 
@@ -710,9 +710,9 @@ export const ContentBlockCard = ({
                           {/* Option Media Thumbnail */}
                           <div className="flex-shrink-0">
                             <label htmlFor={`option-media-${option.id}`} className="cursor-pointer">
-                              {option.media ? (
+                              {option.media?.url ? (
                                 <div className="w-10 h-10 rounded overflow-hidden border hover:opacity-80 transition-opacity">
-                                  <img src={option.media} alt="" className="w-full h-full object-cover" />
+                                  <img src={option.media.url} alt="" className="w-full h-full object-cover" />
                                 </div>
                               ) : (
                                 <div className="w-10 h-10 rounded border-2 border-dashed flex items-center justify-center hover:border-primary transition-colors">
