@@ -335,38 +335,42 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
             <div 
               className="h-full relative flex flex-col items-center justify-center p-6"
               style={{
-                backgroundColor: currentBlock.content.background || 'hsl(var(--background))',
+                backgroundColor: currentBlock.content.backgroundColor || 'hsl(var(--background))',
               }}
             >
-              {/* Background Media */}
+              {/* Background Media - Fullscreen */}
               {currentBlock.content.backgroundMedia && (
-                <div className="absolute inset-0 opacity-30">
-                  {currentBlock.content.backgroundMedia.includes('video') ? (
-                    <video 
-                      className="w-full h-full object-cover"
-                      autoPlay
-                      loop
-                      muted
-                      playsInline
-                    >
-                      <source src={currentBlock.content.backgroundMedia} type="video/mp4" />
-                    </video>
-                  ) : (
-                    <img 
-                      src={currentBlock.content.backgroundMedia} 
-                      alt=""
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
+                <>
+                  <div className="absolute inset-0 z-0">
+                    {currentBlock.content.backgroundMedia.includes('video') ? (
+                      <video 
+                        className="w-full h-full object-cover"
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                      >
+                        <source src={currentBlock.content.backgroundMedia} type="video/mp4" />
+                      </video>
+                    ) : (
+                      <img 
+                        src={currentBlock.content.backgroundMedia} 
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    )}
+                  </div>
+                  {/* Gradient overlay for readability */}
+                  <div className="absolute inset-0 z-0 bg-gradient-to-t from-black/60 via-black/20 to-black/40" />
+                </>
               )}
 
               <div className="relative z-10 max-w-sm w-full space-y-4">
                 {/* Top Media */}
-                {currentBlock.content.media && (
+                {currentBlock.content.media?.url && (
                   <div className="bg-white rounded-2xl p-4 shadow-lg">
                     <img 
-                      src={currentBlock.content.media} 
+                      src={currentBlock.content.media.url} 
                       alt=""
                       className="w-full h-32 object-contain"
                     />
@@ -396,9 +400,9 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
                       }}
                       className="w-full bg-white hover:bg-gray-50 rounded-2xl shadow-lg transition-all flex items-center gap-3 p-4"
                     >
-                      {option.media && (
+                      {option.media?.url && (
                         <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center">
-                          <img src={option.media} alt="" className="w-full h-full object-cover" />
+                          <img src={option.media.url} alt="" className="w-full h-full object-cover" />
                         </div>
                       )}
                       <span className="text-gray-900 font-medium text-base leading-tight text-left flex-1">
