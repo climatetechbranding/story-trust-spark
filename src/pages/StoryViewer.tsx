@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { ChevronUp, X, Play, Pause, Volume2, VolumeX, QrCode } from "lucide-react";
+import { ChevronUp, ChevronLeft, ChevronRight, X, Play, Pause, Volume2, VolumeX, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -133,6 +133,9 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
 
   const totalBlocks = currentBranch?.blocks.length || 0;
 
+  const canGoNext = currentBlockIndex < totalBlocks - 1;
+  const canGoPrevious = currentBlockIndex > 0 || navigationStack.length > 0;
+
   return (
     <motion.div 
       className={`${isPreview ? 'h-full' : 'h-screen'} w-full bg-background relative overflow-hidden`}
@@ -165,6 +168,28 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
           onClick={handleBack}
         >
           <X className="h-5 w-5" />
+        </Button>
+      )}
+
+      {/* Navigation Buttons (Preview Mode) */}
+      {canGoPrevious && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute left-2 top-1/2 -translate-y-1/2 z-30 bg-black/20 hover:bg-black/40 text-white rounded-full h-12 w-12"
+          onClick={handlePrevious}
+        >
+          <ChevronLeft className="h-6 w-6" />
+        </Button>
+      )}
+      {canGoNext && (
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute right-2 top-1/2 -translate-y-1/2 z-30 bg-black/20 hover:bg-black/40 text-white rounded-full h-12 w-12"
+          onClick={handleNext}
+        >
+          <ChevronRight className="h-6 w-6" />
         </Button>
       )}
 
@@ -205,10 +230,16 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
                   <p className="text-sm opacity-90">{currentBlock.content.description}</p>
                 )}
                 {currentBlock.content.substantiation?.enabled && (
-                  <div className="flex items-center gap-2 text-sm opacity-75 mt-4 animate-bounce">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowLegal(true);
+                    }}
+                    className="flex items-center gap-2 text-sm opacity-75 mt-4 animate-bounce hover:opacity-100 transition-opacity"
+                  >
                     <ChevronUp className="h-4 w-4" />
                     <span>Swipe up for verification</span>
-                  </div>
+                  </button>
                 )}
               </div>
 
@@ -251,10 +282,16 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
                   </p>
                 )}
                 {currentBlock.content.substantiation?.enabled && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6 animate-bounce">
+                  <button 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowLegal(true);
+                    }}
+                    className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6 animate-bounce hover:text-foreground transition-colors"
+                  >
                     <ChevronUp className="h-4 w-4" />
                     <span>Swipe up for verification</span>
-                  </div>
+                  </button>
                 )}
               </div>
             </div>
@@ -353,7 +390,10 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
                       key={i}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
-                      onClick={() => handleBranchNavigation(option.targetBranchId)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleBranchNavigation(option.targetBranchId);
+                      }}
                       className="w-full bg-white hover:bg-gray-50 rounded-2xl shadow-lg transition-all flex items-center gap-3 p-4"
                     >
                       {option.media && (
@@ -383,7 +423,7 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
           }}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
           className="absolute inset-x-0 bottom-0 bg-background rounded-t-3xl shadow-2xl border-t"
-          style={{ height: "85vh" }}
+          style={{ height: isPreview ? "85%" : "85vh" }}
           onClick={() => !showLegal && setShowLegal(true)}
         >
           <div className="flex justify-center py-3 cursor-pointer" onClick={() => showLegal && setShowLegal(false)}>
@@ -404,7 +444,7 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
             </Button>
           )}
 
-          <div className="px-6 pb-6 overflow-y-auto" style={{ maxHeight: "calc(85vh - 60px)" }}>
+          <div className="px-6 pb-6 overflow-y-auto" style={{ maxHeight: isPreview ? "calc(85% - 60px)" : "calc(85vh - 60px)" }}>
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-bold mb-3">{currentBlock.content.substantiation.title}</h3>
