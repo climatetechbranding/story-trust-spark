@@ -272,7 +272,12 @@ const StoryBuilder = () => {
             <div className="flex items-center gap-2">
               <Button 
                 variant="outline" 
-                onClick={() => navigate(story?.id ? `/story/${story.id}` : `/story/preview`)}
+                onClick={() => {
+                  if (story?.id) {
+                    window.open(`/story/${story.id}?preview=true`, "_blank");
+                  }
+                }}
+                disabled={!story?.id}
               >
                 <Smartphone className="h-4 w-4 mr-2" />
                 Preview
