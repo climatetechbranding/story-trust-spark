@@ -60,6 +60,7 @@ export const ContentBlockCard = ({
 }: ContentBlockCardProps) => {
   const { uploadVideo, uploading, progress } = useVideoUpload();
   
+  // Video block dropzone
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0 && block.type === "video") {
       const file = acceptedFiles[0];
@@ -76,6 +77,53 @@ export const ContentBlockCard = ({
     maxFiles: 1,
     disabled: uploading,
   });
+
+  // Branch Choice top media dropzone
+  const onTopMediaDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0 && block.type === "branch_choice") {
+      const file = acceptedFiles[0];
+      const url = await uploadVideo(file);
+      if (url) {
+        onUpdate({ ...block.content, media: { url } });
+      }
+    }
+  }, [block.type, block.content, uploadVideo, onUpdate]);
+
+  const topMediaDropzone = useDropzone({
+    onDrop: onTopMediaDrop,
+    accept: { 'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif'] },
+    maxFiles: 1,
+    disabled: uploading,
+  });
+
+  // Branch Choice background media dropzone
+  const onBackgroundMediaDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length > 0 && block.type === "branch_choice") {
+      const file = acceptedFiles[0];
+      const url = await uploadVideo(file);
+      if (url) {
+        onUpdate({ ...block.content, backgroundMedia: url });
+      }
+    }
+  }, [block.type, block.content, uploadVideo, onUpdate]);
+
+  const backgroundMediaDropzone = useDropzone({
+    onDrop: onBackgroundMediaDrop,
+    accept: { 
+      'image/*': ['.png', '.jpg', '.jpeg', '.webp', '.gif'],
+      'video/*': ['.mp4', '.mov', '.webm']
+    },
+    maxFiles: 1,
+    disabled: uploading,
+  });
+
+  // Branch Choice option media upload
+  const uploadOptionMedia = useCallback(async (file: File, optionId: string) => {
+    const url = await uploadVideo(file);
+    if (url) {
+      updateOption(optionId, { media: url });
+    }
+  }, [uploadVideo]);
 
   const getIcon = () => {
     switch (block.type) {
@@ -529,42 +577,77 @@ export const ContentBlockCard = ({
                 {/* Top Media Section */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Top Media (Optional)</label>
-                  <Input
-                    type="text"
-                    placeholder="Image URL"
-                    value={block.content.media?.url || ""}
-                    onChange={(e) => onUpdate({ ...block.content, media: { url: e.target.value } })}
-                    className="text-xs"
-                  />
+                  <div {...topMediaDropzone.getRootProps()} className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${topMediaDropzone.isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}`}>
+                    <input {...topMediaDropzone.getInputProps()} />
+                    {block.content.media?.url ? (
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded overflow-hidden border">
+                          <img src={block.content.media.url} alt="" className="w-full h-full object-cover" />
+                        </div>
+                        <div className="flex-1 text-xs">
+                          <p className="text-muted-foreground">Click or drag to replace</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdate({ ...block.content, media: null });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="text-center">
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          {topMediaDropzone.isDragActive ? 'Drop image here' : 'Click or drag image here'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  {uploading && <p className="text-xs text-muted-foreground mt-1">Uploading... {progress}%</p>}
                 </div>
 
                 {/* Background Media Section */}
                 <div>
                   <label className="text-sm font-medium mb-2 block">Background Media (Image/Video)</label>
-                  <div className="flex items-start gap-2">
+                  <div {...backgroundMediaDropzone.getRootProps()} className={`border-2 border-dashed rounded-lg p-4 cursor-pointer transition-colors ${backgroundMediaDropzone.isDragActive ? 'border-primary bg-primary/5' : 'border-muted-foreground/25 hover:border-primary/50'}`}>
+                    <input {...backgroundMediaDropzone.getInputProps()} />
                     {block.content.backgroundMedia ? (
-                      <div className="w-20 h-20 rounded-lg overflow-hidden border">
-                        {block.content.backgroundMedia.includes('video') ? (
-                          <video src={block.content.backgroundMedia} className="w-full h-full object-cover" />
-                        ) : (
-                          <img src={block.content.backgroundMedia} alt="" className="w-full h-full object-cover" />
-                        )}
+                      <div className="flex items-center gap-3">
+                        <div className="w-16 h-16 rounded overflow-hidden border">
+                          {block.content.backgroundMedia.includes('video') ? (
+                            <video src={block.content.backgroundMedia} className="w-full h-full object-cover" />
+                          ) : (
+                            <img src={block.content.backgroundMedia} alt="" className="w-full h-full object-cover" />
+                          )}
+                        </div>
+                        <div className="flex-1 text-xs">
+                          <p className="text-muted-foreground">Click or drag to replace</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onUpdate({ ...block.content, backgroundMedia: null });
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     ) : (
-                      <div className="w-20 h-20 rounded-lg border-2 border-dashed flex items-center justify-center">
-                        <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                      <div className="text-center">
+                        <Upload className="h-8 w-8 mx-auto mb-2 text-muted-foreground" />
+                        <p className="text-xs text-muted-foreground">
+                          {backgroundMediaDropzone.isDragActive ? 'Drop media here' : 'Click or drag image/video here'}
+                        </p>
                       </div>
                     )}
-                    <div className="flex flex-col gap-2 flex-1">
-                      <Input
-                        type="text"
-                        placeholder="Image or Video URL"
-                        value={block.content.backgroundMedia || ""}
-                        onChange={(e) => onUpdate({ ...block.content, backgroundMedia: e.target.value })}
-                        className="text-xs"
-                      />
-                    </div>
                   </div>
+                  {uploading && <p className="text-xs text-muted-foreground mt-1">Uploading... {progress}%</p>}
                 </div>
 
                 {/* Title Text Section */}
@@ -592,30 +675,38 @@ export const ContentBlockCard = ({
                           
                           {/* Option Media Thumbnail */}
                           <div className="flex-shrink-0">
-                            {option.media ? (
-                              <div className="w-10 h-10 rounded overflow-hidden border">
-                                <img src={option.media} alt="" className="w-full h-full object-cover" />
-                              </div>
-                            ) : (
-                              <div className="w-10 h-10 rounded border-2 border-dashed flex items-center justify-center">
-                                <Upload className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
+                            <label htmlFor={`option-media-${option.id}`} className="cursor-pointer">
+                              {option.media ? (
+                                <div className="w-10 h-10 rounded overflow-hidden border hover:opacity-80 transition-opacity">
+                                  <img src={option.media} alt="" className="w-full h-full object-cover" />
+                                </div>
+                              ) : (
+                                <div className="w-10 h-10 rounded border-2 border-dashed flex items-center justify-center hover:border-primary transition-colors">
+                                  <Upload className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              )}
+                            </label>
+                            <input
+                              id={`option-media-${option.id}`}
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  await uploadOptionMedia(file, option.id);
+                                }
+                              }}
+                            />
                           </div>
                           
-                          {/* Option Text & Media */}
+                          {/* Option Text */}
                           <div className="flex-1 space-y-2">
                             <Input
                               value={option.text}
                               onChange={(e) => updateOption(option.id, { text: e.target.value })}
                               placeholder="Option text (keep short)"
                               className="text-sm"
-                            />
-                            <Input
-                              value={option.media || ""}
-                              onChange={(e) => updateOption(option.id, { media: e.target.value })}
-                              placeholder="Icon/Image URL"
-                              className="text-xs"
                             />
                           </div>
                           
