@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { ChevronUp, X, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { ChevronUp, X, Play, Pause, Volume2, VolumeX, QrCode } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +9,7 @@ import { BrandThemeProvider, useBrandTheme } from "@/contexts/BrandThemeContext"
 import { BrandTheme } from "@/types/brand";
 import { brandSettingsToTheme } from "@/hooks/useBrandSettings";
 import { Skeleton } from "@/components/ui/skeleton";
+import { QRCodeDialog } from "@/components/QRCodeDialog";
 
 interface ContentBlock {
   id: string;
@@ -431,6 +432,10 @@ const StoryViewerContent = ({ story }: { story: Story }) => {
 
 const StoryViewer = () => {
   const { id, shortUrl } = useParams();
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const isPreviewMode = searchParams.get("preview") === "true";
+  const [showQRDialog, setShowQRDialog] = useState(false);
 
   // Fetch story data
   const { data: story, isLoading, error } = useQuery({
@@ -514,6 +519,71 @@ const StoryViewer = () => {
     );
   }
 
+  // Preview mode: Show phone frame with preview controls
+  if (isPreviewMode) {
+    return (
+      <BrandThemeProvider theme={theme}>
+        <div className="min-h-screen bg-muted/30 backdrop-blur-sm">
+          {/* Preview Banner */}
+          <div className="bg-background border-b border-border px-4 py-3 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              This is a private preview - don't share this link
+            </p>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowQRDialog(true)}
+              >
+                <QrCode className="h-4 w-4 mr-2" />
+                Preview on mobile
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => navigate(`/story/${id}/edit`)}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Close
+              </Button>
+            </div>
+          </div>
+
+          {/* Phone Frame */}
+          <div className="flex items-center justify-center min-h-[calc(100vh-60px)] py-8">
+            <div className="relative">
+              {/* Phone Container */}
+              <div className="w-[375px] h-[667px] bg-background rounded-[3rem] shadow-2xl overflow-hidden border-[14px] border-foreground/10 relative">
+                {/* Notch */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-40 h-7 bg-foreground/10 rounded-b-3xl z-50"></div>
+                
+                {/* Story Content */}
+                <div className="w-full h-full overflow-hidden">
+                  <StoryViewerContent story={story as unknown as Story} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* QR Code Dialog */}
+          {story.short_url && (
+            <QRCodeDialog
+              open={showQRDialog}
+              onOpenChange={setShowQRDialog}
+              story={{
+                id: story.id,
+                name: story.name,
+                short_url: story.short_url,
+                qr_code_url: story.qr_code_url,
+              }}
+            />
+          )}
+        </div>
+      </BrandThemeProvider>
+    );
+  }
+
+  // Consumer mode: Fullscreen immersive experience
   return (
     <BrandThemeProvider theme={theme}>
       <StoryViewerContent story={story as unknown as Story} />
