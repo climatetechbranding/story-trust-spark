@@ -219,6 +219,73 @@ export const ContentBlockCard = ({
               {block.content.plainText && (
                 <GreenClaimsDetector text={block.content.plainText} />
               )}
+              
+              {/* Substantiation/Green Claim */}
+              <div className="border-t pt-4 space-y-3">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="has-substantiation"
+                    checked={block.content.substantiation?.enabled || false}
+                    onCheckedChange={(checked) => {
+                      const substantiation = checked 
+                        ? { 
+                            enabled: true,
+                            title: "Sustainability Claim",
+                            summary: "Add verification details here...",
+                            evidence: "",
+                          }
+                        : { enabled: false };
+                      onUpdate({ ...block.content, substantiation });
+                    }}
+                  />
+                  <Label htmlFor="has-substantiation" className="text-sm font-medium">
+                    Add sustainability claim (swipe-up verification)
+                  </Label>
+                </div>
+                
+                {block.content.substantiation?.enabled && (
+                  <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Claim Title</label>
+                      <Input
+                        value={block.content.substantiation?.title || ""}
+                        onChange={(e) => onUpdate({ 
+                          ...block.content, 
+                          substantiation: { ...block.content.substantiation, title: e.target.value }
+                        })}
+                        placeholder="e.g., 100% Recycled Materials"
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Plain Language Summary</label>
+                      <Textarea
+                        value={block.content.substantiation?.summary || ""}
+                        onChange={(e) => onUpdate({ 
+                          ...block.content, 
+                          substantiation: { ...block.content.substantiation, summary: e.target.value }
+                        })}
+                        placeholder="Explain the claim in consumer-friendly language..."
+                        rows={3}
+                        className="text-sm"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium mb-1 block">Evidence / Documentation</label>
+                      <Textarea
+                        value={block.content.substantiation?.evidence || ""}
+                        onChange={(e) => onUpdate({ 
+                          ...block.content, 
+                          substantiation: { ...block.content.substantiation, evidence: e.target.value }
+                        })}
+                        placeholder="Link to certifications, test results, LCA reports..."
+                        rows={2}
+                        className="text-sm"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
 
@@ -308,6 +375,73 @@ export const ContentBlockCard = ({
                     hotspots={block.content.hotspots || []}
                     onChange={(hotspots) => onUpdate({ ...block.content, hotspots })}
                   />
+                  
+                  {/* Substantiation/Green Claim */}
+                  <div className="border-t pt-4 space-y-3">
+                    <div className="flex items-center space-x-2">
+                      <Checkbox
+                        id="video-substantiation"
+                        checked={block.content.substantiation?.enabled || false}
+                        onCheckedChange={(checked) => {
+                          const substantiation = checked 
+                            ? { 
+                                enabled: true,
+                                title: "Sustainability Claim",
+                                summary: "Add verification details here...",
+                                evidence: "",
+                              }
+                            : { enabled: false };
+                          onUpdate({ ...block.content, substantiation });
+                        }}
+                      />
+                      <Label htmlFor="video-substantiation" className="text-sm font-medium">
+                        Add sustainability claim (swipe-up verification)
+                      </Label>
+                    </div>
+                    
+                    {block.content.substantiation?.enabled && (
+                      <div className="space-y-3 pl-6 border-l-2 border-primary/20">
+                        <div>
+                          <label className="text-xs font-medium mb-1 block">Claim Title</label>
+                          <Input
+                            value={block.content.substantiation?.title || ""}
+                            onChange={(e) => onUpdate({ 
+                              ...block.content, 
+                              substantiation: { ...block.content.substantiation, title: e.target.value }
+                            })}
+                            placeholder="e.g., Carbon Neutral Production"
+                            className="text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium mb-1 block">Plain Language Summary</label>
+                          <Textarea
+                            value={block.content.substantiation?.summary || ""}
+                            onChange={(e) => onUpdate({ 
+                              ...block.content, 
+                              substantiation: { ...block.content.substantiation, summary: e.target.value }
+                            })}
+                            placeholder="Explain the claim in consumer-friendly language..."
+                            rows={3}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium mb-1 block">Evidence / Documentation</label>
+                          <Textarea
+                            value={block.content.substantiation?.evidence || ""}
+                            onChange={(e) => onUpdate({ 
+                              ...block.content, 
+                              substantiation: { ...block.content.substantiation, evidence: e.target.value }
+                            })}
+                            placeholder="Link to certifications, test results..."
+                            rows={2}
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </>

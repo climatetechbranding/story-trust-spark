@@ -58,7 +58,7 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
   const handleSwipe = (event: any, info: PanInfo) => {
     const swipeThreshold = 50;
     
-    if (info.offset.y < -swipeThreshold && !showLegal && currentBlock?.content.greenClaim) {
+    if (info.offset.y < -swipeThreshold && !showLegal && currentBlock?.content.substantiation?.enabled) {
       setShowLegal(true);
     } else if (info.offset.y > swipeThreshold && showLegal) {
       setShowLegal(false);
@@ -204,10 +204,10 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
                 {currentBlock.content.description && (
                   <p className="text-sm opacity-90">{currentBlock.content.description}</p>
                 )}
-                {currentBlock.content.greenClaim && (
-                  <div className="flex items-center gap-2 text-sm opacity-75 mt-4">
-                    <ChevronUp className="h-4 w-4 animate-bounce" />
-                    <span>Swipe up for proof</span>
+                {currentBlock.content.substantiation?.enabled && (
+                  <div className="flex items-center gap-2 text-sm opacity-75 mt-4 animate-bounce">
+                    <ChevronUp className="h-4 w-4" />
+                    <span>Swipe up for verification</span>
                   </div>
                 )}
               </div>
@@ -250,9 +250,9 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
                     {currentBlock.content.text}
                   </p>
                 )}
-                {currentBlock.content.greenClaim && (
-                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6">
-                    <ChevronUp className="h-4 w-4 animate-bounce" />
+                {currentBlock.content.substantiation?.enabled && (
+                  <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-6 animate-bounce">
+                    <ChevronUp className="h-4 w-4" />
                     <span>Swipe up for verification</span>
                   </div>
                 )}
@@ -375,7 +375,7 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
       </AnimatePresence>
 
       {/* Legal/Substantiation Drawer */}
-      {currentBlock.content.substantiation && (
+      {currentBlock.content.substantiation?.enabled && (
         <motion.div
           initial={false}
           animate={{
@@ -411,6 +411,7 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
               </div>
 
               <div className="bg-card rounded-lg p-4 border">
+                <h4 className="font-semibold mb-2 text-sm">Plain Language Summary</h4>
                 <p className="text-sm leading-relaxed text-foreground">
                   {currentBlock.content.substantiation.summary}
                 </p>
@@ -418,10 +419,16 @@ const StoryViewerContent = ({ story, isPreview = false }: { story: Story; isPrev
 
               {currentBlock.content.substantiation.evidence && (
                 <div>
-                  <h4 className="font-semibold mb-2">Evidence</h4>
-                  <p className="text-sm text-muted-foreground">{currentBlock.content.substantiation.evidence}</p>
+                  <h4 className="font-semibold mb-2">Evidence & Documentation</h4>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                    {currentBlock.content.substantiation.evidence}
+                  </p>
                 </div>
               )}
+              
+              <div className="bg-muted/50 rounded-lg p-4 text-xs text-muted-foreground">
+                <p>This substantiation meets EU Green Claims Directive requirements by providing accessible evidence in consumer-friendly language.</p>
+              </div>
             </div>
           </div>
         </motion.div>
