@@ -91,7 +91,7 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
               </div>
               
               {/* Current Block Display */}
-              <div className={`h-full pt-8 flex ${containerClass}`}>
+              <div className={`h-full pt-8 ${currentBlock?.type === 'video' || currentBlock?.type === 'image' || currentBlock?.type === 'map' ? '' : `flex ${containerClass}`}`}>
                 {currentBlock && (
                   <motion.div 
                     className={`w-full ${
@@ -140,41 +140,81 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                     )}
                     
                     {currentBlock.type === "video" && (
-                      <div className="space-y-2">
+                      <div className="h-full relative bg-black">
+                        {/* Gradient overlay for text legibility */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/40 z-10 pointer-events-none" />
+                        
                         {currentBlock.content.url ? (
-                          <div className="aspect-video bg-muted/50 rounded-lg overflow-hidden">
-                            <video 
-                              src={currentBlock.content.url} 
-                              controls 
-                              autoPlay={currentBlock.content.autoplay !== false}
-                              loop={currentBlock.content.loop}
-                              muted={currentBlock.content.muted}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
+                          <video 
+                            src={currentBlock.content.url} 
+                            controls 
+                            autoPlay={currentBlock.content.autoplay !== false}
+                            loop={currentBlock.content.loop}
+                            muted={currentBlock.content.muted !== false}
+                            playsInline
+                            className="h-full w-full object-cover"
+                          />
                         ) : (
-                          <div className="aspect-video bg-muted/50 flex items-center justify-center rounded-lg">
-                            <Video className="h-12 w-12 text-muted-foreground" />
+                          <div className="h-full flex items-center justify-center">
+                            <Video className="h-16 w-16 text-white/50" />
                           </div>
                         )}
-                        {currentBlock.content.title && (
-                          <p className="text-sm font-medium px-2">{currentBlock.content.title}</p>
-                        )}
-                        {currentBlock.content.description && (
-                          <p className="text-xs text-muted-foreground px-2">{currentBlock.content.description}</p>
+                        
+                        {/* Title/description overlay at bottom */}
+                        {(currentBlock.content.title || currentBlock.content.description) && (
+                          <div className="absolute bottom-4 left-4 right-4 z-20 text-white">
+                            {currentBlock.content.title && (
+                              <h3 
+                                className="font-bold text-lg mb-1"
+                                style={{ fontFamily: theme?.primaryFont || undefined }}
+                              >
+                                {currentBlock.content.title}
+                              </h3>
+                            )}
+                            {currentBlock.content.description && (
+                              <p 
+                                className="text-xs opacity-90"
+                                style={{ fontFamily: theme?.secondaryFont || undefined }}
+                              >
+                                {currentBlock.content.description}
+                              </p>
+                            )}
+                          </div>
                         )}
                       </div>
                     )}
                     
                     {currentBlock.type === "image" && (
-                      <div className="aspect-[4/3] bg-muted/50 flex items-center justify-center rounded-lg">
-                        <ImageIcon className="h-12 w-12 text-muted-foreground" />
+                      <div className="h-full relative">
+                        {currentBlock.content.url ? (
+                          <>
+                            <img 
+                              src={currentBlock.content.url}
+                              alt={currentBlock.content.alt || ""}
+                              className="h-full w-full object-cover"
+                            />
+                            {currentBlock.content.caption && (
+                              <div className="absolute bottom-4 left-4 right-4 text-white bg-black/60 backdrop-blur-sm p-3 rounded-lg">
+                                <p 
+                                  className="text-sm"
+                                  style={{ fontFamily: theme?.secondaryFont || undefined }}
+                                >
+                                  {currentBlock.content.caption}
+                                </p>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <div className="h-full flex items-center justify-center bg-muted">
+                            <ImageIcon className="h-16 w-16 text-muted-foreground" />
+                          </div>
+                        )}
                       </div>
                     )}
                     
                     {currentBlock.type === "map" && (
-                      <div className="h-60 bg-muted/50 flex items-center justify-center rounded-lg">
-                        <Map className="h-12 w-12 text-muted-foreground" />
+                      <div className="h-full bg-muted/50 flex items-center justify-center">
+                        <Map className="h-16 w-16 text-muted-foreground" />
                       </div>
                     )}
                     
