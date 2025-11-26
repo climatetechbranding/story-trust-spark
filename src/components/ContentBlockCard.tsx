@@ -15,6 +15,7 @@ import { NodeSettingsPanel } from "@/components/NodeSettingsPanel";
 import { useVideoUpload } from "@/hooks/useVideoUpload";
 import { useCallback } from "react";
 import { useDropzone } from "react-dropzone";
+import { supabase } from "@/integrations/supabase/client";
 import {
   Video,
   Type,
@@ -60,6 +61,39 @@ export const ContentBlockCard = ({
 }: ContentBlockCardProps) => {
   const { uploadVideo, uploading, progress } = useVideoUpload();
   
+  // General media upload for images and videos
+  const uploadMedia = async (file: File): Promise<string | null> => {
+    try {
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (file.size > maxSize) {
+        throw new Error('File must be less than 20MB');
+      }
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${crypto.randomUUID()}.${fileExt}`;
+      const folder = file.type.startsWith('video/') ? 'videos' : 'images';
+      const filePath = `${folder}/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('brand-assets')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (error) throw error;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('brand-assets')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      console.error('Upload failed:', error.message);
+      return null;
+    }
+  };
+  
   // Video block dropzone
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0 && block.type === "video") {
@@ -82,12 +116,12 @@ export const ContentBlockCard = ({
   const onTopMediaDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0 && block.type === "branch_choice") {
       const file = acceptedFiles[0];
-      const url = await uploadVideo(file);
+      const url = await uploadMedia(file);
       if (url) {
         onUpdate({ ...block.content, media: { url } });
       }
     }
-  }, [block.type, block.content, uploadVideo, onUpdate]);
+  }, [block.type, block.content, onUpdate]);
 
   const topMediaDropzone = useDropzone({
     onDrop: onTopMediaDrop,
@@ -100,12 +134,12 @@ export const ContentBlockCard = ({
   const onBackgroundMediaDrop = useCallback(async (acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0 && block.type === "branch_choice") {
       const file = acceptedFiles[0];
-      const url = await uploadVideo(file);
+      const url = await uploadMedia(file);
       if (url) {
         onUpdate({ ...block.content, backgroundMedia: url });
       }
     }
-  }, [block.type, block.content, uploadVideo, onUpdate]);
+  }, [block.type, block.content, onUpdate]);
 
   const backgroundMediaDropzone = useDropzone({
     onDrop: onBackgroundMediaDrop,
@@ -119,11 +153,11 @@ export const ContentBlockCard = ({
 
   // Branch Choice option media upload
   const uploadOptionMedia = useCallback(async (file: File, optionId: string) => {
-    const url = await uploadVideo(file);
+    const url = await uploadMedia(file);
     if (url) {
       updateOption(optionId, { media: url });
     }
-  }, [uploadVideo]);
+  }, []);
 
   const getIcon = () => {
     switch (block.type) {
