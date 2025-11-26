@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Video, Type, Image as ImageIcon, Map, GitBranch, ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,19 @@ interface MobilePreviewProps {
 export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const { theme } = useBrandTheme();
+  const previewRef = useRef<HTMLDivElement>(null);
+  
+  // Auto-scroll to selected block
+  useEffect(() => {
+    if (selectedBlock) {
+      const index = blocks.findIndex(b => b.id === selectedBlock);
+      if (index !== -1) {
+        setCurrentIndex(index);
+        // Scroll preview into view
+        previewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }
+  }, [selectedBlock, blocks]);
   
   const goToPrevious = () => {
     setCurrentIndex((prev) => Math.max(0, prev - 1));
@@ -43,7 +56,7 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
   const containerClass = `w-full ${paddingClasses[appearance.padding || 'normal']} ${alignmentClasses[appearance.alignment || 'center']}`;
   
   return (
-    <div className="sticky top-24">
+    <div ref={previewRef} className="sticky top-24">
       <h3 className="font-semibold mb-4 flex items-center justify-between">
         <span>Mobile Preview</span>
         {blocks.length > 0 && (
@@ -219,42 +232,80 @@ export const MobilePreview = ({ blocks, selectedBlock }: MobilePreviewProps) => 
                     )}
                     
                     {currentBlock.type === "branch_choice" && (
-                      <div className="space-y-4 p-6 h-full flex flex-col justify-center">
-                        {currentBlock.content.media?.url && (
-                          <img
-                            src={currentBlock.content.media.url}
-                            alt=""
-                            className="w-full h-32 object-cover rounded-lg"
-                          />
+                      <div className="h-full relative flex flex-col items-center justify-center p-4">
+                        {/* Background Media */}
+                        {currentBlock.content.backgroundMedia && (
+                          <div className="absolute inset-0 opacity-30">
+                            {currentBlock.content.backgroundMedia.includes('video') ? (
+                              <video 
+                                className="w-full h-full object-cover"
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                              >
+                                <source src={currentBlock.content.backgroundMedia} type="video/mp4" />
+                              </video>
+                            ) : (
+                              <img 
+                                src={currentBlock.content.backgroundMedia} 
+                                alt=""
+                                className="w-full h-full object-cover"
+                              />
+                            )}
+                          </div>
                         )}
-                        {currentBlock.content.text && (
-                          <p className="text-sm text-foreground">{currentBlock.content.text}</p>
-                        )}
-                        <div className="space-y-3">
-                          {(currentBlock.content.options || []).map((option: any) => (
-                            <button
-                              key={option.id}
-                              className="w-full flex items-center gap-3 p-3 rounded-xl hover:opacity-90 transition-opacity shadow-sm"
-                              style={{
-                                backgroundColor: theme ? `hsl(${theme.primaryColor})` : undefined,
-                                color: 'white',
-                                fontFamily: theme?.primaryFont || undefined,
-                              }}
-                            >
-                              {option.media?.url ? (
-                                <img
-                                  src={option.media.url}
-                                  alt=""
-                                  className="w-10 h-10 rounded-lg object-cover flex-shrink-0"
-                                />
-                              ) : (
-                                <div className="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center flex-shrink-0">
-                                  <GitBranch className="w-5 h-5" />
-                                </div>
-                              )}
-                              <span className="text-sm font-medium text-left flex-1">{option.text}</span>
-                            </button>
-                          ))}
+
+                        <div className="relative z-10 max-w-[90%] w-full space-y-2">
+                          {/* Top Media */}
+                          {currentBlock.content.media?.url && (
+                            <div className="bg-white rounded-xl p-2 shadow-lg">
+                              <img 
+                                src={currentBlock.content.media.url} 
+                                alt=""
+                                className="w-full h-16 object-contain"
+                              />
+                            </div>
+                          )}
+                          
+                          {/* Title in speech bubble */}
+                          {currentBlock.content.text && (
+                            <div className="bg-white rounded-xl p-2 shadow-lg relative">
+                              <div className="absolute -bottom-1 left-4 w-2 h-2 bg-white transform rotate-45" />
+                              <h2 className="text-xs font-bold text-gray-900 leading-snug">
+                                {currentBlock.content.text}
+                              </h2>
+                            </div>
+                          )}
+                          
+                          {/* Options as stacked buttons */}
+                          <div className="space-y-1.5 pt-1">
+                            {(currentBlock.content.options || []).map((option: any) => (
+                              <button
+                                key={option.id}
+                                className="w-full bg-white hover:bg-gray-50 rounded-xl shadow-lg transition-all flex items-center gap-2 p-2"
+                              >
+                                {option.media ? (
+                                  <div className="flex-shrink-0 w-6 h-6 rounded-lg overflow-hidden bg-primary/10 flex items-center justify-center">
+                                    <img src={option.media} alt="" className="w-full h-full object-cover" />
+                                  </div>
+                                ) : (
+                                  <div className="flex-shrink-0 w-6 h-6 rounded-lg bg-primary/10 flex items-center justify-center">
+                                    <GitBranch className="w-3 h-3 text-primary" />
+                                  </div>
+                                )}
+                                <span className="text-gray-900 font-medium text-xs leading-tight text-left flex-1">
+                                  {option.text}
+                                </span>
+                                <span 
+                                  className="text-sm"
+                                  style={{ color: theme ? `hsl(${theme.primaryColor})` : undefined }}
+                                >
+                                  →
+                                </span>
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     )}
